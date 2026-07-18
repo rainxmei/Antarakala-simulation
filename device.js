@@ -101,8 +101,8 @@
         <div class="dlcd-header"><b>ANTARAKALA</b>${battWifi()}</div>
         <div class="dlcd-gate">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="4" y="10" width="16" height="10" rx="2"/><path d="M8 10V7a4 4 0 018 0v3"/></svg>
-          <b>Menunggu HP</b>
-          <span>Buka menu "Panduan Auskultasi" di HP untuk mengaktifkan perangkat ini</span>
+          <b>Menunggu Perangkat</b>
+          <span>Isi data pasien terlebih dahulu pada "Mulai Sekarang", lalu "Mulai Auskultasi" untuk mengaktifkan alat ini</span>
         </div>`;
       return;
     }
