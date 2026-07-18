@@ -628,7 +628,7 @@
           <h4 style="margin-top:6px;">${h.name}</h4>
           <p>ID: ${h.id}</p>
           <p style="margin-top:6px; display:flex; gap:14px;">
-            <span>♥ HR: ${h.hr} bpm</span><span>≋ SpO2: ${h.spo2}%</span>
+            <span>≋ SpO2: ${h.spo2}%</span>
           </p>
         </div>
       </div>`;
