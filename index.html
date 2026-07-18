@@ -420,7 +420,7 @@
 
                 <div class="alert alert-red" id="aiConclusionBox">
                   <div>
-                    <h3 id="aiConclusionTitle">Kesimpulan AI</h3>
+                    <h3 id="aiConclusionTitle">Kesimpulan</h3>
                     <p id="aiConclusionText">Memuat kesimpulan...</p>
                   </div>
                 </div>
@@ -576,6 +576,10 @@
 
     <!-- ============ PHYSICAL DEVICE MOCKUP ============ -->
     <div class="device-wrap">
+      <div class="device-caption">
+        <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><rect x="4" y="2" width="16" height="20" rx="2"/><path d="M9 18h6"/></svg>
+        <span><b>PERANGKAT FISIK ANTARAKALA</b><br>Dioperasikan langsung oleh nakes via LCD &amp; 3 tombol ini</span>
+      </div>
       <div class="device">
         <img src="assets/device.png" alt="Perangkat fisik ANTARAKALA" class="device-img" draggable="false">
         <div class="device-led led-red" id="deviceLed" title="Indikator status rekam"></div>
@@ -587,9 +591,8 @@
         <div class="device-label lbl-pilih">Pilih</div>
         <div class="device-label lbl-kanan">Kanan ▶</div>
       </div>
-      <div class="device-caption">
-        <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><rect x="4" y="2" width="16" height="20" rx="2"/><path d="M9 18h6"/></svg>
-        <span><b>Perangkat fisik ANTARAKALA</b><br>Dioperasikan langsung oleh nakes via LCD &amp; 3 tombol ini</span>
+      <div class="device-disclaimer">
+        Bagian input pada purwarupa ini, meliputi identitas pasien, alur navigasi, dan struktur formulir, telah merepresentasikan rancangan akhir sistem. Namun, seluruh data output, termasuk hasil prediksi, skor risiko, penjelasan TreeSHAP, dan durasi tiap tahap pemrosesan, bersifat placeholder dan belum merepresentasikan performa maupun spesifikasi akhir, mengingat model machine learning belum diintegrasikan secara fungsional pada tahap purwarupa ini.
       </div>
     </div>
 

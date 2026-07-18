@@ -16,7 +16,7 @@ a{color:inherit;}
    ========================================================= */
 .page{height:100vh; display:flex; align-items:center; justify-content:center; padding:14px; overflow:hidden;}
 
-.showcase{display:flex; flex-wrap:wrap; align-items:center; justify-content:center; gap:38px; width:100%; height:100%;}
+.showcase{display:flex; flex-wrap:wrap; align-items:flex-start; justify-content:center; gap:38px; width:100%; height:100%;}
 
 /* =========================================================
    Phone frame
@@ -28,7 +28,7 @@ a{color:inherit;}
 .phone{
   position:relative;
   aspect-ratio:390/844;
-  height:min(94vh, 880px, calc(94vw * 844 / 390));
+  height:min(92vh, 860px, calc(92vw * 844 / 390));
   width:auto;
   background:#0B0D0C;
   border-radius:50px;
@@ -318,13 +318,14 @@ a{color:inherit;}
    Physical device panel (photo + LCD overlay + button hotspots)
    ========================================================= */
 .device-wrap{
-  display:flex; flex-direction:column; align-items:center; justify-content:center; gap:14px;
-  height:100%;
+  position:relative;
+  display:flex; flex-direction:column; align-items:center; justify-content:flex-start; gap:10px;
+  padding-top:4%;
 }
 .device{
   position:relative;
   aspect-ratio:844/1036;
-  height:min(64vh, 560px, calc(64vw * 1036 / 844));
+  height:min(56vh, 500px, calc(56vw * 1036 / 844));
   width:auto;
   filter:drop-shadow(0 22px 34px rgba(0,0,0,.45));
   user-select:none;
@@ -414,6 +415,20 @@ a{color:inherit;}
 .device-caption b{color:#C9F3DD; font-weight:700;}
 .device-caption svg{flex:0 0 auto; opacity:.85; margin-top:1px;}
 
+.device-disclaimer{
+  position:absolute;
+  top:100%;
+  left:0;
+  margin-top:12px;
+  width:min(480px, 44vw);
+  font-size:10px;
+  line-height:1.55;
+  color:#8AA396;
+  text-align:left;
+  padding-top:8px;
+  border-top:1px solid rgba(255,255,255,.10);
+}
+
 /* ---- LCD inner UI (single-page layout) ---- */
 .dlcd-header{
   display:flex; align-items:center; justify-content:space-between;
@@ -433,16 +448,16 @@ a{color:inherit;}
 .dlcd-bar-row b{font-size:8px; font-weight:800; color:#151A18; white-space:nowrap;}
 
 .dlcd-body{flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:0 3%; min-height:0;}
-.dlcd-diagram{width:100%; height:100%;}
-.dlcd-labels{display:flex; justify-content:space-around; width:100%; margin-top:0;}
-.dlcd-labels span{font-size:7px; font-weight:800; color:#151A18;}
+.dlcd-diagram{width:100%; height:auto; display:block;}
+.dlcd-labels{display:grid; grid-template-columns:1fr 1fr; width:100%; margin-top:0;}
+.dlcd-labels span{font-size:7px; font-weight:800; color:#151A18; text-align:center;}
 
 .dlcd-resultrow{
   flex:0 0 auto; display:flex; align-items:flex-end; justify-content:space-between;
   padding:1% 6% 3%; gap:6px;
 }
 .dlcd-result{display:flex; flex-direction:column; align-items:flex-start;}
-.dlcd-result b{font-size:12px; font-weight:800; letter-spacing:.01em; line-height:1.15;}
+.dlcd-result b{font-size:9px; font-weight:800; letter-spacing:.01em; line-height:1.15;}
 .dlcd-result span{font-size:7.5px; color:#5B6460; margin-top:1px;}
 .dlcd-pointname{font-size:7.5px; font-weight:700; color:#3A423F; text-align:right; max-width:44%; line-height:1.3;}
 

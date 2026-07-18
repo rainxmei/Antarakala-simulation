@@ -78,7 +78,7 @@
   function battWifi(){
     return `<div class="dlcd-status">
       <div class="dlcd-batt"><i></i><i></i><i></i><span class="cap"></span></div>
-      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#9AA39D" stroke-width="2.4" stroke-linecap="round"><path d="M2 2l20 20"/><path d="M8.5 16.5a5 5 0 017 0"/><path d="M5 13a9 9 0 018-2.6M19 13a9 9 0 00-3-2.1"/><circle cx="12" cy="20" r="1" fill="#9AA39D" stroke="none"/></svg>
+      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#1C9660" stroke-width="2.6" stroke-linecap="round"><path d="M9 17H7a5 5 0 010-10h2"/><path d="M15 7h2a5 5 0 010 10h-2"/><path d="M8 12h8"/></svg>
     </div>`;
   }
 
@@ -123,7 +123,7 @@
     let resultHTML;
     const res = D.results[D.cursor];
     if(allDone){
-      resultHTML = `<b style="color:#0E6E4A; font-size:16px;">✓ SELESAI</b><span>Lanjutkan di HP / tablet</span>`;
+      resultHTML = `<b style="color:#0E6E4A; font-size:11px;">✓ SELESAI</b><span>Lanjutkan di HP / tablet</span>`;
     } else if(D.state === "recording"){
       resultHTML = `<b style="color:#3A423F;">MEREKAM…</b><span>Jangan gerakkan sensor</span>`;
     } else if(D.state === "badsignal"){
@@ -131,10 +131,10 @@
     } else if(res){
       resultHTML = `<b style="color:${RESULT_COLORS[res.result]};">${RESULT_LABELS[res.result]}</b><span>${res.confidence}% Keyakinan</span>`;
     } else {
-      resultHTML = `<b style="color:#3A423F;">SIAP MEREKAM</b><span>Tekan PILIH untuk mulai</span>`;
+      resultHTML = `<b style="color:#3A423F; font-size:8px;">SIAP MEREKAM</b><span>Tekan PILIH untuk mulai</span>`;
     }
 
-    const pointLabel = allDone ? "6/6 Titik Terekam" : POINT_NAMES[D.cursor];
+    const pointLabel = allDone ? "6/6 TITIK TEREKAM" : POINT_NAMES[D.cursor].toUpperCase();
 
     el.innerHTML = `
       <div class="dlcd-header"><b>${headerLabel}</b>${battWifi()}</div>

@@ -501,13 +501,13 @@
     if(!r) return;
     const box = $("#aiConclusionBox");
     box.className = "alert " + (r.tier==="high"?"alert-red":r.tier==="mid"?"alert-amber":"alert-green");
-    $("#aiConclusionTitle").textContent = "Kesimpulan AI";
+    $("#aiConclusionTitle").textContent = "Kesimpulan";
     const top = r.factors.slice(0,3).map(f=>f.label.replace(/\s*\(.*?\)/,"").toLowerCase());
-    const implication = r.tier==="high" ? "Pneumonia Berat yang membutuhkan rujukan segera ke RS/IGD."
-      : r.tier==="mid" ? "kemungkinan Pneumonia yang memerlukan terapi antibiotik oral dan observasi ketat."
-      : "kondisi stabil tanpa tanda pneumonia yang signifikan.";
+    const implication = r.tier==="high" ? "PNEUMONIA BERAT YANG MEMBUTUHKAN RUJUKAN SEGERA KE RS/IGD."
+      : r.tier==="mid" ? "KEMUNGKINAN PNEUMONIA YANG MEMERLUKAN TERAPI ANTIBIOTIK ORAL DAN OBSERVASI KETAT."
+      : "KONDISI STABIL TANPA TANDA PNEUMONIA YANG SIGNIFIKAN.";
     $("#aiConclusionText").textContent =
-      `Pasien dinilai ${RESULT_TEXT[r.tier].label.replace("RISIKO ","Risiko ")} karena ditemukan ${top.join(", ")}. Kondisi ini menunjukkan ${implication}`;
+      `Pasien dinilai ${RESULT_TEXT[r.tier].label} karena ditemukan ${top.join(", ")}. Kondisi ini menunjukkan ${implication}`;
 
     drawSpectrogram(r.tier, r.crackleCount);
   }
