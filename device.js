@@ -12,7 +12,7 @@
     "Posterior Atas Kiri","Posterior Atas Kanan","Posterior Bawah Kiri",
     "Posterior Bawah Kanan","Anterior Atas Kiri","Anterior Atas Kanan"
   ];
-  const REC_SECONDS = 4;          // durasi rekam per titik (dipercepat utk demo)
+  const REC_SECONDS = 2;          // durasi rekam per titik (dipercepat utk demo)
   const BAD_SIGNAL_CHANCE = 0.16; // peluang kualitas sinyal rendah per rekaman
   const RESULT_COLORS = { crackle:"#D9364A", wheeze:"#C98A00", normal:"#0E6E4A" };
   const RESULT_LABELS = { crackle:"CRACKLE", wheeze:"WHEEZE", normal:"NORMAL" };
@@ -82,10 +82,19 @@
     </div>`;
   }
 
+  function updateLED(){
+    const led = $("#deviceLed");
+    if(!led) return;
+    const isRecording = D.state === "recording";
+    led.classList.toggle("led-green", isRecording);
+    led.classList.toggle("led-red", !isRecording);
+  }
+
   /* ---------- single-page render ---------- */
   function render(){
     const el = lcd();
     if(!el) return;
+    updateLED();
 
     if(!D.phoneReady && D.state === "idle"){
       el.innerHTML = `

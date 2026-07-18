@@ -198,6 +198,8 @@
       `<p style="font-size:12.5px;color:var(--ink-300);">Belum ada riwayat pemeriksaan.</p>`;
   }
 
+  const RISK_LABEL = { high:"RISIKO TINGGI", mid:"RISIKO SEDANG", low:"RISIKO RENDAH" };
+
   function historyItemHTML(h){
     const tierMap = { high:{cls:"high", pill:"pill-red", text:"Rujukan"}, mid:{cls:"", pill:"pill-amber", text:"Pemantauan"}, low:{cls:"", pill:"pill-green", text:"Selesai"} };
     const t = tierMap[h.tier] || tierMap.low;
@@ -205,7 +207,7 @@
       <div class="num">${h.tier==="high" ? "!" : "✓"}</div>
       <div class="content">
         <h4>${h.name}</h4>
-        <p>Keluhan: ${h.complaint}</p>
+        <p>${RISK_LABEL[h.tier] || RISK_LABEL.low}</p>
         <span class="pill ${t.pill}">${t.text}</span>
       </div>
     </div>`;
@@ -306,7 +308,7 @@
       $("#activePointLabel").textContent = "Menunggu perangkat mulai merekam…";
       renderPointList(-1, "waiting");
     }
-    setTimerDisplay(0, "00:00 / 00:04");
+    setTimerDisplay(0, "00:00 / 00:02");
   }
 
   let phoneAusTimer = null;
@@ -339,7 +341,7 @@
     state.points[index] = { id:index+1, name, result };
     if(isScreenVisible("proses-auskultasi")){
       renderPointList(index, "waiting");
-      setTimerDisplay(0, "00:00 / 00:04");
+      setTimerDisplay(0, "00:00 / 00:02");
       const doneCount = state.points.filter(Boolean).length;
       $("#activePointLabel").textContent = doneCount>=6
         ? "✓ 6 Titik Selesai Direkam"
@@ -605,8 +607,8 @@
     if($("#pName")) $("#pName").value = "";
     if($("#pAge")) $("#pAge").value = "";
     $$(".seg button").forEach(b=>b.classList.remove("selected","danger"));
-    if($("#vTemp")) $("#vTemp").value = "36.8";
-    if($("#vSpo2")) $("#vSpo2").value = "97";
+    if($("#vTemp")) $("#vTemp").value = "";
+    if($("#vSpo2")) $("#vSpo2").value = "";
     validatePatientForm();
   }
 

@@ -387,11 +387,32 @@ a{color:inherit;}
 }
 .device.denied{ animation:device-shake .38s ease; }
 
-.device-caption{
-  display:flex; align-items:center; gap:7px;
-  color:#9FE6C4; font-size:11.5px; font-weight:600; text-align:center; max-width:280px; line-height:1.5;
+.device-led{
+  position:absolute;
+  left:90%; top:6%;
+  width:3.1%; height:2.6%;
+  transform:translate(-50%,-50%);
+  border-radius:50%;
+  background:#7a1a1a;
+  box-shadow:inset 0 0 0 1px rgba(0,0,0,.35);
+  transition:background .2s ease, box-shadow .2s ease;
+  z-index:2;
 }
-.device-caption svg{flex:0 0 auto; opacity:.85;}
+.device-led.led-red{
+  background:radial-gradient(circle at 35% 30%, #ff6b5c, #C4271B 70%);
+  box-shadow:0 0 6px 2px rgba(220,40,20,.65), inset 0 0 0 1px rgba(0,0,0,.3);
+}
+.device-led.led-green{
+  background:radial-gradient(circle at 35% 30%, #7CF0A8, #17A94B 70%);
+  box-shadow:0 0 7px 2px rgba(30,210,100,.75), inset 0 0 0 1px rgba(0,0,0,.3);
+}
+
+.device-caption{
+  display:flex; align-items:flex-start; gap:8px;
+  color:#9FE6C4; font-size:11.5px; font-weight:600; text-align:left; max-width:300px; line-height:1.55;
+}
+.device-caption b{color:#C9F3DD; font-weight:700;}
+.device-caption svg{flex:0 0 auto; opacity:.85; margin-top:1px;}
 
 /* ---- LCD inner UI (single-page layout) ---- */
 .dlcd-header{

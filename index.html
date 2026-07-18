@@ -181,7 +181,7 @@
                 <div class="h1">Panduan Auskultasi</div>
 
                 <div class="body-diagram">
-                  <div class="cap"><b>6 TITIK AUSKULTASI ANTARAKALA</b><span>Standar berbasis bukti klinis</span></div>
+                  <div class="cap"><b>6 TITIK AUSKULTASI ANTARAKALA</b></div>
                   <div class="diagram-row">
                     <div class="diagram-col">
                       <p>POSTERIOR (PUNGGUNG)</p>
@@ -244,7 +244,7 @@
                 </div>
                 <div class="timer-card">
                   <div class="point-label"><span class="mic-pulse"></span><span id="activePointLabel">Menunggu perangkat mulai merekam…</span></div>
-                  <div class="timer-num" id="timerNum">00:00 / 00:04</div>
+                  <div class="timer-num" id="timerNum">00:00 / 00:02</div>
                   <div class="timer-bar"><div class="timer-bar-fill" id="timerBarFill"></div></div>
                 </div>
 
@@ -283,11 +283,11 @@
                   </div>
                   <div class="field">
                     <label>Suhu</label>
-                    <div class="unit-input"><input type="number" id="vTemp" step="0.1" placeholder="36.5" value="36.8"><span>°C</span></div>
+                    <div class="unit-input"><input type="number" id="vTemp" step="0.1" placeholder="Contoh: 36.8"><span>°C</span></div>
                   </div>
                   <div class="field">
                     <label>SpO2</label>
-                    <div class="unit-input"><input type="number" id="vSpo2" placeholder="97" value="97"><span>%</span></div>
+                    <div class="unit-input"><input type="number" id="vSpo2" placeholder="Contoh: 97"><span>%</span></div>
                   </div>
                 </div>
 
@@ -578,6 +578,7 @@
     <div class="device-wrap">
       <div class="device">
         <img src="assets/device.png" alt="Perangkat fisik ANTARAKALA" class="device-img" draggable="false">
+        <div class="device-led led-red" id="deviceLed" title="Indikator status rekam"></div>
         <div class="device-lcd" id="deviceLcd"></div>
         <button class="device-btn btn-kiri" data-devbtn="kiri" aria-label="Geser kursor kiri"></button>
         <button class="device-btn btn-pilih" data-devbtn="pilih" aria-label="Pilih / konfirmasi"></button>
@@ -587,8 +588,8 @@
         <div class="device-label lbl-kanan">Kanan ▶</div>
       </div>
       <div class="device-caption">
-        <svg viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><rect x="4" y="2" width="16" height="20" rx="2"/><path d="M9 18h6"/></svg>
-        Perangkat fisik ANTARAKALA — dioperasikan langsung oleh nakes via LCD &amp; 3 tombol ini
+        <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><rect x="4" y="2" width="16" height="20" rx="2"/><path d="M9 18h6"/></svg>
+        <span><b>Perangkat fisik ANTARAKALA</b><br>Dioperasikan langsung oleh nakes via LCD &amp; 3 tombol ini</span>
       </div>
     </div>
 
