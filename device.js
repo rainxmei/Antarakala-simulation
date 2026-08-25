@@ -14,7 +14,7 @@
   ];
   const REC_SECONDS = 2;          // durasi rekam per titik (dipercepat utk demo)
   const BAD_SIGNAL_CHANCE = 0.16; // peluang kualitas sinyal rendah per rekaman
-  const RESULT_COLORS = { crackle:"#D9364A", wheeze:"#C98A00", normal:"#0E6E4A" };
+  const RESULT_COLORS = { crackle:"#D9364A", wheeze:"#C98A00", normal:"#00A3AE" };
   const RESULT_LABELS = { crackle:"CRACKLE", wheeze:"WHEEZE", normal:"NORMAL" };
 
   const D = {
@@ -78,7 +78,7 @@
   function battWifi(){
     return `<div class="dlcd-status">
       <div class="dlcd-batt"><i></i><i></i><i></i><span class="cap"></span></div>
-      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#1C9660" stroke-width="2.6" stroke-linecap="round"><path d="M9 17H7a5 5 0 010-10h2"/><path d="M15 7h2a5 5 0 010 10h-2"/><path d="M8 12h8"/></svg>
+      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#3DC4C0" stroke-width="2.6" stroke-linecap="round"><path d="M9 17H7a5 5 0 010-10h2"/><path d="M15 7h2a5 5 0 010 10h-2"/><path d="M8 12h8"/></svg>
     </div>`;
   }
 
@@ -123,7 +123,7 @@
     let resultHTML;
     const res = D.results[D.cursor];
     if(allDone){
-      resultHTML = `<b style="color:#0E6E4A; font-size:11px;">✓ SELESAI</b><span>Lanjutkan di HP / tablet</span>`;
+      resultHTML = `<b style="color:#00A3AE; font-size:11px;">✓ SELESAI</b><span>Lanjutkan di HP / tablet</span>`;
     } else if(D.state === "recording"){
       resultHTML = `<b style="color:#3A423F;">MEREKAM…</b><span>Jangan gerakkan sensor</span>`;
     } else if(D.state === "badsignal"){

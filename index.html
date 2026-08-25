@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>ANTARAKALA — Demo Interaktif Skrining Pneumonia Balita</title>
+<link rel="icon" type="image/png" href="assets/logo.png">
 <meta name="description" content="Prototipe antarmuka ANTARAKALA: stetoskop digital modular berbasis Edge AI untuk skrining risiko pneumonia balita di Puskesmas 3T. KMIPN VIII 2026.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Poppins:wght@600;700&display=swap" rel="stylesheet">
@@ -24,7 +25,7 @@
 
           <div class="status-bar">
             <span id="clock">09:41</span>
-            <span>●●● Antarakala-Local</span>
+            <span>Local</span>
           </div>
 
           <div class="app-scroll" id="appScroll">
@@ -34,9 +35,7 @@
             <!-- ============================================================ -->
             <section class="screen visible" data-screen="beranda">
               <header class="app-header">
-                <div class="brand-mark">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round"><path d="M4 3v7a5 5 0 0010 0V3"/><path d="M19 8v2a7 7 0 01-14 0V8"/><circle cx="19" cy="5" r="1.6" fill="#fff" stroke="none"/></svg>
-                </div>
+                <div class="brand-mark"><img src="assets/logo.png" alt="Antarakala"></div>
                 <span class="brand-name">ANTARAKALA</span>
                 <div class="header-side">
                   <button class="icon-btn" data-action="open-about" aria-label="Tentang demo">
@@ -48,7 +47,7 @@
               <div class="screen-body">
                 <div class="hero-card">
                   <div class="hero-icon">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round"><path d="M4 3v7a5 5 0 0010 0V3"/><path d="M19 8v2a7 7 0 01-14 0V8"/><circle cx="19" cy="5" r="1.8" fill="#fff" stroke="none"/></svg>
+                    <img src="assets/logo.png" alt="Antarakala">
                   </div>
                   <h2>Mulai Pemeriksaan Baru</h2>
                   <p>Sambungkan perangkat ANTARAKALA untuk memulai skrining risiko pneumonia balita secara real-time.</p>
@@ -60,7 +59,7 @@
                 <div class="section-label">Ringkasan Hari Ini</div>
                 <div class="summary-stack">
                   <div class="summary-card-full">
-                    <div class="ic" style="background:var(--green-100)"><svg viewBox="0 0 24 24" fill="none" stroke="#0E6E4A" stroke-width="2" stroke-linecap="round"><path d="M17 21v-2a4 4 0 00-4-4H7a4 4 0 00-4 4v2"/><circle cx="10" cy="7" r="4"/><path d="M22 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg></div>
+                    <div class="ic" style="background:var(--green-100)"><svg viewBox="0 0 24 24" fill="none" stroke="#00A3AE" stroke-width="2" stroke-linecap="round"><path d="M17 21v-2a4 4 0 00-4-4H7a4 4 0 00-4 4v2"/><circle cx="10" cy="7" r="4"/><path d="M22 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg></div>
                     <span>Pasien Diperiksa</span>
                     <b id="statPasien">0</b>
                   </div>
@@ -83,7 +82,7 @@
             <!-- ============================================================ -->
             <section class="screen" data-screen="input-pasien">
               <header class="app-header">
-                <div class="brand-mark"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round"><path d="M4 3v7a5 5 0 0010 0V3"/><path d="M19 8v2a7 7 0 01-14 0V8"/></svg></div>
+                <div class="brand-mark"><img src="assets/logo.png" alt="Antarakala"></div>
                 <span class="brand-name">ANTARAKALA</span>
               </header>
               <div class="screen-body">
@@ -149,7 +148,7 @@
             <!-- ============================================================ -->
             <section class="screen" data-screen="tanda-bahaya">
               <header class="app-header">
-                <div class="brand-mark"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round"><path d="M4 3v7a5 5 0 0010 0V3"/><path d="M19 8v2a7 7 0 01-14 0V8"/></svg></div>
+                <div class="brand-mark"><img src="assets/logo.png" alt="Antarakala"></div>
                 <span class="brand-name">ANTARAKALA</span>
               </header>
               <div class="screen-body">
@@ -174,7 +173,7 @@
             <!-- ============================================================ -->
             <section class="screen" data-screen="panduan-auskultasi">
               <header class="app-header">
-                <div class="brand-mark"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round"><path d="M4 3v7a5 5 0 0010 0V3"/><path d="M19 8v2a7 7 0 01-14 0V8"/></svg></div>
+                <div class="brand-mark"><img src="assets/logo.png" alt="Antarakala"></div>
                 <span class="brand-name">ANTARAKALA</span>
               </header>
               <div class="screen-body">
@@ -189,10 +188,10 @@
                       <svg viewBox="0 0 120 150" width="100%" height="150">
                         <ellipse cx="60" cy="26" rx="16" ry="17" fill="#F4E3D3"/>
                         <path d="M30 55 Q60 38 90 55 L88 120 Q60 132 32 120 Z" fill="#FBEFE4" stroke="#E7D3BC" stroke-width="1"/>
-                        <circle cx="46" cy="65" r="7" fill="#0E6E4A"/><text x="46" y="69" font-size="9" fill="#fff" text-anchor="middle" font-family="Poppins">1</text>
-                        <circle cx="74" cy="65" r="7" fill="#0E6E4A"/><text x="74" y="69" font-size="9" fill="#fff" text-anchor="middle" font-family="Poppins">2</text>
-                        <circle cx="44" cy="97" r="7" fill="#0E6E4A"/><text x="44" y="101" font-size="9" fill="#fff" text-anchor="middle" font-family="Poppins">3</text>
-                        <circle cx="76" cy="97" r="7" fill="#0E6E4A"/><text x="76" y="101" font-size="9" fill="#fff" text-anchor="middle" font-family="Poppins">4</text>
+                        <circle cx="46" cy="65" r="7" fill="#00A3AE"/><text x="46" y="69" font-size="9" fill="#fff" text-anchor="middle" font-family="Poppins">1</text>
+                        <circle cx="74" cy="65" r="7" fill="#00A3AE"/><text x="74" y="69" font-size="9" fill="#fff" text-anchor="middle" font-family="Poppins">2</text>
+                        <circle cx="44" cy="97" r="7" fill="#00A3AE"/><text x="44" y="101" font-size="9" fill="#fff" text-anchor="middle" font-family="Poppins">3</text>
+                        <circle cx="76" cy="97" r="7" fill="#00A3AE"/><text x="76" y="101" font-size="9" fill="#fff" text-anchor="middle" font-family="Poppins">4</text>
                       </svg>
                     </div>
                     <div class="diagram-col">
@@ -201,8 +200,8 @@
                       <svg viewBox="0 0 120 150" width="100%" height="150">
                         <ellipse cx="60" cy="26" rx="16" ry="17" fill="#F4E3D3"/>
                         <path d="M30 55 Q60 38 90 55 L88 120 Q60 132 32 120 Z" fill="#FBEFE4" stroke="#E7D3BC" stroke-width="1"/>
-                        <circle cx="47" cy="70" r="7" fill="#0E6E4A"/><text x="47" y="74" font-size="9" fill="#fff" text-anchor="middle" font-family="Poppins">5</text>
-                        <circle cx="73" cy="70" r="7" fill="#0E6E4A"/><text x="73" y="74" font-size="9" fill="#fff" text-anchor="middle" font-family="Poppins">6</text>
+                        <circle cx="47" cy="70" r="7" fill="#00A3AE"/><text x="47" y="74" font-size="9" fill="#fff" text-anchor="middle" font-family="Poppins">5</text>
+                        <circle cx="73" cy="70" r="7" fill="#00A3AE"/><text x="73" y="74" font-size="9" fill="#fff" text-anchor="middle" font-family="Poppins">6</text>
                       </svg>
                     </div>
                   </div>
@@ -236,7 +235,7 @@
             <!-- ============================================================ -->
             <section class="screen" data-screen="proses-auskultasi">
               <header class="app-header">
-                <div class="brand-mark"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round"><path d="M4 3v7a5 5 0 0010 0V3"/><path d="M19 8v2a7 7 0 01-14 0V8"/></svg></div>
+                <div class="brand-mark"><img src="assets/logo.png" alt="Antarakala"></div>
                 <span class="brand-name">ANTARAKALA</span>
               </header>
               <div class="screen-body">
@@ -266,7 +265,7 @@
             <!-- ============================================================ -->
             <section class="screen" data-screen="input-parameter">
               <header class="app-header">
-                <div class="brand-mark"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round"><path d="M4 3v7a5 5 0 0010 0V3"/><path d="M19 8v2a7 7 0 01-14 0V8"/></svg></div>
+                <div class="brand-mark"><img src="assets/logo.png" alt="Antarakala"></div>
                 <span class="brand-name">ANTARAKALA</span>
               </header>
               <div class="screen-body">
@@ -324,7 +323,7 @@
             <!-- ============================================================ -->
             <section class="screen" data-screen="proses-ai">
               <header class="app-header">
-                <div class="brand-mark"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round"><path d="M4 3v7a5 5 0 0010 0V3"/><path d="M19 8v2a7 7 0 01-14 0V8"/></svg></div>
+                <div class="brand-mark"><img src="assets/logo.png" alt="Antarakala"></div>
                 <span class="brand-name">ANTARAKALA</span>
               </header>
               <div class="screen-body">
@@ -355,7 +354,7 @@
             <!-- ============================================================ -->
             <section class="screen" data-screen="hasil-skrining">
               <header class="app-header">
-                <div class="brand-mark"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round"><path d="M4 3v7a5 5 0 0010 0V3"/><path d="M19 8v2a7 7 0 01-14 0V8"/></svg></div>
+                <div class="brand-mark"><img src="assets/logo.png" alt="Antarakala"></div>
                 <span class="brand-name">ANTARAKALA</span>
               </header>
               <div class="screen-body">
@@ -377,10 +376,10 @@
                         <svg viewBox="0 0 120 150" width="100%" height="140">
                           <ellipse cx="60" cy="26" rx="16" ry="17" fill="#F4E3D3"/>
                           <path d="M30 55 Q60 38 90 55 L88 120 Q60 132 32 120 Z" fill="#FBEFE4" stroke="#E7D3BC" stroke-width="1"/>
-                          <circle cx="46" cy="65" r="7" id="dotPt1" fill="#0E6E4A"/><text x="46" y="69" font-size="9" fill="#fff" text-anchor="middle" font-family="Poppins">1</text>
-                          <circle cx="74" cy="65" r="7" id="dotPt2" fill="#0E6E4A"/><text x="74" y="69" font-size="9" fill="#fff" text-anchor="middle" font-family="Poppins">2</text>
-                          <circle cx="44" cy="97" r="7" id="dotPt3" fill="#0E6E4A"/><text x="44" y="101" font-size="9" fill="#fff" text-anchor="middle" font-family="Poppins">3</text>
-                          <circle cx="76" cy="97" r="7" id="dotPt4" fill="#0E6E4A"/><text x="76" y="101" font-size="9" fill="#fff" text-anchor="middle" font-family="Poppins">4</text>
+                          <circle cx="46" cy="65" r="7" id="dotPt1" fill="#00A3AE"/><text x="46" y="69" font-size="9" fill="#fff" text-anchor="middle" font-family="Poppins">1</text>
+                          <circle cx="74" cy="65" r="7" id="dotPt2" fill="#00A3AE"/><text x="74" y="69" font-size="9" fill="#fff" text-anchor="middle" font-family="Poppins">2</text>
+                          <circle cx="44" cy="97" r="7" id="dotPt3" fill="#00A3AE"/><text x="44" y="101" font-size="9" fill="#fff" text-anchor="middle" font-family="Poppins">3</text>
+                          <circle cx="76" cy="97" r="7" id="dotPt4" fill="#00A3AE"/><text x="76" y="101" font-size="9" fill="#fff" text-anchor="middle" font-family="Poppins">4</text>
                         </svg>
                       </div>
                       <div class="diagram-col">
@@ -388,8 +387,8 @@
                         <svg viewBox="0 0 120 150" width="100%" height="140">
                           <ellipse cx="60" cy="26" rx="16" ry="17" fill="#F4E3D3"/>
                           <path d="M30 55 Q60 38 90 55 L88 120 Q60 132 32 120 Z" fill="#FBEFE4" stroke="#E7D3BC" stroke-width="1"/>
-                          <circle cx="47" cy="70" r="7" id="dotPt5" fill="#0E6E4A"/><text x="47" y="74" font-size="9" fill="#fff" text-anchor="middle" font-family="Poppins">5</text>
-                          <circle cx="73" cy="70" r="7" id="dotPt6" fill="#0E6E4A"/><text x="73" y="74" font-size="9" fill="#fff" text-anchor="middle" font-family="Poppins">6</text>
+                          <circle cx="47" cy="70" r="7" id="dotPt5" fill="#00A3AE"/><text x="47" y="74" font-size="9" fill="#fff" text-anchor="middle" font-family="Poppins">5</text>
+                          <circle cx="73" cy="70" r="7" id="dotPt6" fill="#00A3AE"/><text x="73" y="74" font-size="9" fill="#fff" text-anchor="middle" font-family="Poppins">6</text>
                         </svg>
                       </div>
                     </div>
@@ -413,7 +412,7 @@
             <!-- ============================================================ -->
             <section class="screen" data-screen="penjelasan-ai">
               <header class="app-header">
-                <div class="brand-mark"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round"><path d="M4 3v7a5 5 0 0010 0V3"/><path d="M19 8v2a7 7 0 01-14 0V8"/></svg></div>
+                <div class="brand-mark"><img src="assets/logo.png" alt="Antarakala"></div>
                 <span class="brand-name">ANTARAKALA</span>
               </header>
               <div class="screen-body">
@@ -435,7 +434,7 @@
                   </div>
                   <div class="legend-row" style="padding:0 2px;">
                     <div class="legend-dot"><i style="background:var(--red-600)"></i>Suara Abnormal</div>
-                    <div class="legend-dot"><i style="background:#8FD8C4"></i>Suara Normal</div>
+                    <div class="legend-dot"><i style="background:#66D8D6"></i>Suara Normal</div>
                   </div>
                   <div class="spectro-card">
                     <canvas id="spectroCanvas" width="600" height="300"></canvas>
@@ -456,7 +455,7 @@
             <!-- ============================================================ -->
             <section class="screen" data-screen="faktor-risiko">
               <header class="app-header">
-                <div class="brand-mark"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round"><path d="M4 3v7a5 5 0 0010 0V3"/><path d="M19 8v2a7 7 0 01-14 0V8"/></svg></div>
+                <div class="brand-mark"><img src="assets/logo.png" alt="Antarakala"></div>
                 <span class="brand-name">ANTARAKALA</span>
               </header>
               <div class="screen-body">
@@ -490,7 +489,7 @@
             <!-- ============================================================ -->
             <section class="screen" data-screen="faktor-kontribusi">
               <header class="app-header">
-                <div class="brand-mark"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round"><path d="M4 3v7a5 5 0 0010 0V3"/><path d="M19 8v2a7 7 0 01-14 0V8"/></svg></div>
+                <div class="brand-mark"><img src="assets/logo.png" alt="Antarakala"></div>
                 <span class="brand-name">ANTARAKALA</span>
               </header>
               <div class="screen-body">
@@ -534,7 +533,7 @@
             <!-- ============================================================ -->
             <section class="screen" data-screen="riwayat">
               <header class="app-header">
-                <div class="brand-mark"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round"><path d="M4 3v7a5 5 0 0010 0V3"/><path d="M19 8v2a7 7 0 01-14 0V8"/></svg></div>
+                <div class="brand-mark"><img src="assets/logo.png" alt="Antarakala"></div>
                 <span class="brand-name">ANTARAKALA</span>
               </header>
               <div class="screen-body">

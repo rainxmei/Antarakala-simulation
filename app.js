@@ -476,7 +476,7 @@
     $("#resultTitle").textContent = RESULT_TEXT[r.tier].label;
     $("#resultAction").textContent = RESULT_TEXT[r.tier].action;
 
-    const colorMap = { crackle:"#D9364A", wheeze:"#C98A00", normal:"#0E6E4A" };
+    const colorMap = { crackle:"#D9364A", wheeze:"#C98A00", normal:"#00A3AE" };
     const labelMap = { crackle:"Crackle", wheeze:"Wheeze", normal:"Normal" };
 
     state.points.forEach((pt,i)=>{
@@ -648,13 +648,13 @@
     <title>Laporan Skrining ANTARAKALA — ${p.name||"Pasien"}</title>
     <style>
       body{font-family:Arial,sans-serif; max-width:640px; margin:40px auto; color:#151A18;}
-      h1{color:#0E6E4A; font-size:22px; margin-bottom:2px;}
+      h1{color:#00A3AE; font-size:22px; margin-bottom:2px;}
       .tag{display:inline-block; padding:6px 14px; border-radius:20px; font-weight:700; color:#fff; margin:10px 0 18px;
-           background:${r.tier==='high'?'#D9364A':r.tier==='mid'?'#C98A00':'#0E6E4A'};}
+           background:${r.tier==='high'?'#D9364A':r.tier==='mid'?'#C98A00':'#00A3AE'};}
       table{width:100%; border-collapse:collapse; margin-bottom:18px;}
       td{padding:7px 4px; border-bottom:1px solid #eee; font-size:13.5px;}
       td:first-child{color:#6B746F; width:45%;}
-      h3{font-size:14px; color:#0E6E4A; margin:18px 0 8px;}
+      h3{font-size:14px; color:#00A3AE; margin:18px 0 8px;}
       .factor{display:flex; justify-content:space-between; font-size:13px; padding:5px 0; border-bottom:1px dashed #eee;}
       footer{margin-top:26px; font-size:11px; color:#9AA39D; line-height:1.6;}
     </style></head><body>
