@@ -3,9 +3,15 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>ANTARAKALA — Demo Interaktif Skrining Pneumonia Balita</title>
+<title>ANTARAKALA</title>
 <link rel="icon" type="image/png" href="assets/logo.png">
-<meta name="description" content="Prototipe antarmuka ANTARAKALA: stetoskop digital modular berbasis Edge AI untuk skrining risiko pneumonia balita di Puskesmas 3T. KMIPN VIII 2026.">
+<meta name="description" content="Purwarupa Interaktif ANTARAKALA: Stetoskop Digital Modular Berbasis Edge AI dengan Skoring Multiparameter LightGBM untuk Skrining Risiko Pneumonia Balita di Puskesmas 3T">
+<meta property="og:title" content="ANTARAKALA">
+<meta property="og:description" content="Purwarupa Interaktif ANTARAKALA: Stetoskop Digital Modular Berbasis Edge AI dengan Skoring Multiparameter LightGBM untuk Skrining Risiko Pneumonia Balita di Puskesmas 3T">
+<meta property="og:type" content="website">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="ANTARAKALA">
+<meta name="twitter:description" content="Purwarupa Interaktif ANTARAKALA: Stetoskop Digital Modular Berbasis Edge AI dengan Skoring Multiparameter LightGBM untuk Skrining Risiko Pneumonia Balita di Puskesmas 3T">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Poppins:wght@600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="style.css">
@@ -37,11 +43,6 @@
               <header class="app-header">
                 <div class="brand-mark"><img src="assets/logo.png" alt="Antarakala"></div>
                 <span class="brand-name">ANTARAKALA</span>
-                <div class="header-side">
-                  <button class="icon-btn" data-action="open-about" aria-label="Tentang demo">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 11v5"/><circle cx="12" cy="8" r=".3" fill="currentColor"/></svg>
-                  </button>
-                </div>
               </header>
 
               <div class="screen-body">
@@ -50,7 +51,7 @@
                     <img src="assets/logo.png" alt="Antarakala">
                   </div>
                   <h2>Mulai Pemeriksaan Baru</h2>
-                  <p>Sambungkan perangkat ANTARAKALA untuk memulai skrining risiko pneumonia balita secara real-time.</p>
+                  <p>Sambungkan dengan perangkat fisik ANTARAKALA untuk memulai skrining risiko pneumonia balita secara real-time.</p>
                   <button class="btn" data-nav="input-pasien">Mulai Sekarang
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
                   </button>
@@ -86,9 +87,6 @@
                 <span class="brand-name">ANTARAKALA</span>
               </header>
               <div class="screen-body">
-                <div class="h1">Input Data Pasien</div>
-                <p class="subtext">Lengkapi informasi dasar pasien untuk memulai skrining pneumonia.</p>
-
                 <div class="card">
                   <div class="card-title">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7V5a2 2 0 012-2h4a2 2 0 012 2v2"/></svg>
@@ -99,7 +97,7 @@
                     <input type="text" id="pName" placeholder="Masukkan nama lengkap">
                   </div>
                   <div class="field">
-                    <label>Usia (Bulan)</label>
+                    <label>Usia</label>
                     <div class="unit-input">
                       <input type="number" id="pAge" placeholder="Contoh: 18" min="0" max="59">
                       <span>Bulan</span>
@@ -180,7 +178,7 @@
                 <div class="h1">Panduan Auskultasi</div>
 
                 <div class="body-diagram">
-                  <div class="cap"><b>6 TITIK AUSKULTASI ANTARAKALA</b></div>
+                  
                   <div class="diagram-row">
                     <div class="diagram-col">
                       <p>POSTERIOR</p>
@@ -245,7 +243,7 @@
                 </div>
                 <div class="timer-card">
                   <div class="point-label"><span class="mic-pulse"></span><span id="activePointLabel">Menunggu perangkat mulai merekam…</span></div>
-                  <div class="timer-num" id="timerNum">00:00 / 00:02</div>
+                  <div class="timer-num" id="timerNum">00:00 / 00:15</div>
                   <div class="timer-bar"><div class="timer-bar-fill" id="timerBarFill"></div></div>
                 </div>
 
@@ -331,8 +329,8 @@
                   <div class="spin-ring">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M12 2a4 4 0 00-4 4v5a4 4 0 008 0V6a4 4 0 00-4-4z"/><path d="M6 11a6 6 0 0012 0M12 17v4"/></svg>
                   </div>
-                  <h3>Sedang Memproses Hasil Pemeriksaan...</h3>
-                  <p>Kecerdasan Buatan (AI) sedang menganalisis suara paru dan parameter klinis untuk mendeteksi kemungkinan pneumonia — seluruhnya berjalan lokal di perangkat, tanpa internet.</p>
+                  <h3>Sistem sedang Menganalisis...</h3>
+                  <p>Sistem sedang menganalisis suara paru dan parameter lainnya untuk skrining risiko pneumonia balita.</p>
                 </div>
 
                 <div class="step-list" id="aiSteps">
@@ -369,7 +367,7 @@
                     Distribusi Suara Paru
                   </div>
                   <div class="body-diagram" style="box-shadow:none; border:none; padding:6px 0 0;">
-                    <div class="cap"><b>6 TITIK AUSKULTASI ANTARAKALA</b></div>
+                    
                     <div class="diagram-row">
                       <div class="diagram-col">
                         <p>POSTERIOR</p>
@@ -397,7 +395,7 @@
                 </div>
               </div>
               <div style="padding:0 18px 18px; display:flex; flex-direction:column; gap:10px;">
-                <button class="btn btn-outline" data-nav="penjelasan-ai">Lihat Penjelasan AI (TreeSHAP)
+                <button class="btn btn-outline" data-nav="penjelasan-ai">Lihat Penjelasan
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
                 </button>
                 <button class="btn btn-primary" data-nav="faktor-kontribusi">Lihat Faktor Kontribusi & Data Vital
@@ -408,7 +406,7 @@
             </section>
 
             <!-- ============================================================ -->
-            <!-- SCREEN: PENJELASAN KEPUTUSAN AI (TreeSHAP + spektrogram) -->
+            <!-- SCREEN: PENJELASAN AI (TreeSHAP + spektrogram) -->
             <!-- ============================================================ -->
             <section class="screen" data-screen="penjelasan-ai">
               <header class="app-header">
@@ -416,7 +414,7 @@
                 <span class="brand-name">ANTARAKALA</span>
               </header>
               <div class="screen-body">
-                <div class="h1">Penjelasan Keputusan AI</div>
+                <div class="h1">Penjelasan AI</div>
                 <p class="subtext" id="explanTinjauan">Tinjauan faktor klinis yang mendasari hasil skrining.</p>
 
                 <div class="alert alert-red" id="aiConclusionBox">
@@ -429,7 +427,7 @@
                 <div class="card" style="background:transparent; border:none; box-shadow:none; padding:0;">
                   <div class="card-title" style="padding:0 2px;">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 3v18h18"/><path d="M7 14l4-4 3 3 5-6"/></svg>
-                    Bukti Suara Paru (Analisis AI)
+                    Bukti Suara Paru
                     <span class="tag-focus" style="margin-left:auto;">Spektrogram Fokus</span>
                   </div>
                   <div class="legend-row" style="padding:0 2px;">
@@ -437,8 +435,8 @@
                     <div class="legend-dot"><i style="background:#66D8D6"></i>Suara Normal</div>
                   </div>
                   <div class="spectro-card">
-                    <canvas id="spectroCanvas" width="600" height="300"></canvas>
-                    <p class="disclaimer">*Visualisasi simulasi untuk demonstrasi antarmuka, bukan spektrogram data real.</p>
+                    <img id="spectroImage" src="assets/spektrogram_real.png" alt="Spektrogram suara paru" />
+                    <p class="disclaimer">Visualisasi spektrogram suara paru.</p>
                   </div>
                 </div>
               </div>
@@ -464,9 +462,11 @@
 
                 <div class="card">
                   <div class="legend-row">
-                    <div class="legend-dot"><i style="background:var(--red-600)"></i>Meningkatkan Risiko</div>
-                    <div class="legend-dot"><i style="background:var(--green-600)"></i>Menurunkan Risiko</div>
+                    <div class="legend-dot"><i style="background:var(--red-600)"></i>Meningkatkan skor kelas</div>
+                    <div class="legend-dot"><i style="background:var(--green-600)"></i>Menurunkan skor kelas</div>
                   </div>
+                  <div class="shap-meta" id="shapMeta">TreeSHAP model LightGBM</div>
+                  <div class="shap-override-note" id="shapOverrideNote" style="display:none;"></div>
                   <div id="factorBars"></div>
                   <div class="confidence-row">
                     <span>Tingkat Kepercayaan AI</span>
@@ -480,6 +480,10 @@
                   Unduh Laporan
                 </button>
                 <button class="btn btn-outline" data-nav="penjelasan-ai">Kembali ke Grafik Spektrogram</button>
+                <button class="btn btn-primary" data-action="save-finish">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M20 6L9 17l-5-5"/></svg>
+                  Simpan &amp; Selesai
+                </button>
               </div>
               <nav class="bottom-nav" data-navbar></nav>
             </section>
@@ -496,7 +500,7 @@
                 <div class="card">
                   <div class="card-title">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 20V10M12 20V4M6 20v-6"/></svg>
-                    Faktor Kontribusi Utama
+                    Faktor Kontribusi Utama (TreeSHAP)
                   </div>
                   <div id="factorBars2"></div>
                 </div>
@@ -564,7 +568,7 @@
             <div class="modal-sheet">
               <h3>Tentang Demo Ini</h3>
               <p><b>ANTARAKALA</b> adalah stetoskop digital modular berbasis Edge AI yang dirancang untuk skrining risiko pneumonia balita di Puskesmas wilayah 3T, beroperasi 100% offline.</p>
-              <p>Website ini adalah <b>prototipe antarmuka (UI/UX)</b> yang mensimulasikan alur kerja lengkap perangkat — mulai dari input data pasien, auskultasi 6 titik, hingga penjelasan keputusan AI (Dual-XAI: TreeSHAP & Grad-CAM). Nilai SpO2, suara paru, dan tingkat kepercayaan AI pada demo ini dihasilkan secara simulatif untuk menunjukkan bagaimana sistem asli akan bekerja.</p>
+              <p>Website ini adalah <b>purwarupa interaktif</b> yang mensimulasikan alur kerja lengkap perangkat, mulai dari input data pasien, auskultasi 6 titik, hingga penjelasan keputusan AI. Inferensi risiko menggunakan model LightGBM yang terintegrasi dan penjelasan TreeSHAP dihitung langsung dari model tersebut. Klasifikasi suara paru CNN dan estimasi laju napas pada tahap ini masih disimulasikan.</p>
               <p>Dikembangkan oleh Tim ANTARAKALA, Politeknik Elektronika Negeri Surabaya, untuk KMIPN VIII 2026.</p>
               <button class="btn btn-primary" data-action="close-about">Mengerti</button>
             </div>
@@ -593,13 +597,14 @@
         <div class="device-label lbl-kanan">Kanan ▶</div>
       </div>
       <div class="device-disclaimer">
-        Bagian input pada purwarupa ini, meliputi identitas pasien, alur navigasi, dan struktur formulir, telah merepresentasikan rancangan akhir sistem. Namun, seluruh data output, termasuk hasil prediksi, skor risiko, penjelasan TreeSHAP, dan durasi tiap tahap pemrosesan, bersifat placeholder dan belum merepresentasikan performa maupun spesifikasi akhir, mengingat model machine learning belum diintegrasikan secara fungsional pada tahap purwarupa ini.
+        Purwarupa ini telah mengintegrasikan inferensi Model B LightGBM dan perhitungan TreeSHAP secara lokal di browser. Klasifikasi suara paru CNN dan estimasi laju napas masih disimulasikan untuk kebutuhan demonstrasi. Hasil purwarupa merupakan alat bantu skrining dan bukan diagnosis medis.
       </div>
     </div>
 
   </div>
 </div>
 
+<script src="lightgbm_model.js"></script>
 <script src="app.js"></script>
 <script src="device.js"></script>
 </body>

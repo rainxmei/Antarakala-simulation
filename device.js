@@ -12,7 +12,7 @@
     "Posterior Atas Kiri","Posterior Atas Kanan","Posterior Bawah Kiri",
     "Posterior Bawah Kanan","Anterior Atas Kiri","Anterior Atas Kanan"
   ];
-  const REC_SECONDS = 2;          // durasi rekam per titik (dipercepat utk demo)
+  const REC_SECONDS = 15;         // durasi rekam per titik
   const BAD_SIGNAL_CHANCE = 0.16; // peluang kualitas sinyal rendah per rekaman
   const RESULT_COLORS = { crackle:"#D9364A", wheeze:"#C98A00", normal:"#00A3AE" };
   const RESULT_LABELS = { crackle:"CRACKLE", wheeze:"WHEEZE", normal:"NORMAL" };
@@ -123,9 +123,9 @@
     let resultHTML;
     const res = D.results[D.cursor];
     if(allDone){
-      resultHTML = `<b style="color:#00A3AE; font-size:11px;">✓ SELESAI</b><span>Lanjutkan di HP / tablet</span>`;
+      resultHTML = `<b style="color:#00A3AE; font-size:11px;">✓ SELESAI</b><span>Lanjutkan di Web Lokal</span>`;
     } else if(D.state === "recording"){
-      resultHTML = `<b style="color:#3A423F;">MEREKAM…</b><span>Jangan gerakkan sensor</span>`;
+      resultHTML = `<b style="color:#3A423F;">MEREKAM…</b><span>Jangan gerakkan stetoskop</span>`;
     } else if(D.state === "badsignal"){
       resultHTML = `<b style="color:#C98A00;">SINYAL RENDAH</b><span>Mengulang otomatis…</span>`;
     } else if(res){
@@ -144,7 +144,7 @@
       </div>
       <div class="dlcd-body">
         ${bodySVG()}
-        <div class="dlcd-labels"><span>Belakang</span><span>Depan</span></div>
+        <div class="dlcd-labels"><span>Punggung</span><span>Dada</span></div>
       </div>
       <div class="dlcd-resultrow">
         <div class="dlcd-result">${resultHTML}</div>
@@ -180,12 +180,9 @@
       return;
     }
     if(D.state === "allDone"){
-      D.done = [false,false,false,false,false,false];
-      D.results = [null,null,null,null,null,null];
-      D.cursor = 0;
-      D.state = "idle";
+      // Pemeriksaan sudah lengkap. Tombol PILIH tidak boleh menghapus hasil 6 titik.
+      // Hasil tetap dipertahankan sampai pengguna memulai pemeriksaan pasien berikutnya.
       render();
-      emit("antarakala:reset", {});
       return;
     }
     // recording / badsignal: tombol tidak berfungsi, otomatis berjalan

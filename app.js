@@ -1,7 +1,8 @@
 /* =========================================================
    ANTARAKALA — Demo App Logic
-   Semua data & inferensi AI pada file ini adalah SIMULASI
-   untuk keperluan demonstrasi antarmuka (lihat modal "Tentang").
+   Model B (LightGBM) menjalankan model hasil training secara nyata
+   di browser. Output akustik/CNN dan estimasi RR pada purwarupa ini
+   masih disimulasikan untuk keperluan demonstrasi.
    ========================================================= */
 (function(){
   "use strict";
@@ -198,7 +199,7 @@
       `<p style="font-size:12.5px;color:var(--ink-300);">Belum ada riwayat pemeriksaan.</p>`;
   }
 
-  const RISK_LABEL = { high:"RISIKO TINGGI", mid:"RISIKO SEDANG", low:"RISIKO RENDAH" };
+  const RISK_LABEL = { high:"RISIKO TINGGI - PNEUMONIA BERAT", mid:"RISIKO SEDANG - PNEUMONIA", low:"RISIKO RENDAH - BUKAN PNEUMONIA" };
 
   function historyItemHTML(h){
     const tierMap = { high:{cls:"high", pill:"pill-red", text:"Rujukan"}, mid:{cls:"", pill:"pill-amber", text:"Pemantauan"}, low:{cls:"", pill:"pill-green", text:"Selesai"} };
@@ -286,6 +287,13 @@
     $("#timerNum").textContent = secLabel;
   }
 
+  function formatMMSS(totalSeconds){
+    const safe = Math.max(0, Number(totalSeconds) || 0);
+    const mins = Math.floor(safe / 60);
+    const secs = Math.floor(safe % 60);
+    return `${String(mins).padStart(2,"0")}:${String(secs).padStart(2,"0")}`;
+  }
+
   function syncAuscultationScreen(){
     state.points = new Array(6).fill(null);
     const snap = window.AntarakalaDevice ? window.AntarakalaDevice.getSnapshot() : null;
@@ -295,7 +303,7 @@
         $("#activePointLabel").textContent = `Titik Aktif: ${snap.cursor+1}. ${snap.pointNames[snap.cursor]}`;
         renderPointList(snap.cursor, "recording");
       } else if(snap.state === "badsignal"){
-        $("#activePointLabel").textContent = `⚠ Sinyal Lemah — Mengulang Titik ${snap.cursor+1}`;
+        $("#activePointLabel").textContent = `⚠ Sinyal Lemah, Mengulang Titik ${snap.cursor+1}`;
         renderPointList(snap.cursor, "badsignal");
       } else if(snap.state === "allDone"){
         $("#activePointLabel").textContent = "✓ 6 Titik Selesai Direkam";
@@ -308,7 +316,7 @@
       $("#activePointLabel").textContent = "Menunggu perangkat mulai merekam…";
       renderPointList(-1, "waiting");
     }
-    setTimerDisplay(0, "00:00 / 00:02");
+    setTimerDisplay(0, "00:00 / 00:15");
   }
 
   let phoneAusTimer = null;
@@ -323,7 +331,8 @@
     phoneAusTimer = setInterval(()=>{
       elapsed += 100;
       const pct = clamp(elapsed/(duration*1000), 0, 1);
-      setTimerDisplay(pct, `00:${String(Math.min(duration,Math.ceil(elapsed/1000))).padStart(2,"0")} / 00:0${duration}`);
+      const elapsedSec = Math.min(duration, Math.floor(elapsed/1000));
+      setTimerDisplay(pct, `${formatMMSS(elapsedSec)} / ${formatMMSS(duration)}`);
       if(elapsed >= duration*1000) clearInterval(phoneAusTimer);
     }, 100);
   });
@@ -331,7 +340,7 @@
   document.addEventListener("antarakala:signal-warning", (e)=>{
     if(!isScreenVisible("proses-auskultasi")) return;
     clearInterval(phoneAusTimer);
-    $("#activePointLabel").textContent = `⚠ Sinyal Lemah — Mengulang Titik ${e.detail.index+1}`;
+    $("#activePointLabel").textContent = `⚠ Sinyal Lemah, Mengulang Titik ${e.detail.index+1}`;
     setTimerDisplay(1, "Mengulang…");
     renderPointList(e.detail.index, "badsignal");
   });
@@ -341,18 +350,18 @@
     state.points[index] = { id:index+1, name, result };
     if(isScreenVisible("proses-auskultasi")){
       renderPointList(index, "waiting");
-      setTimerDisplay(0, "00:00 / 00:02");
+      setTimerDisplay(0, "00:00 / 00:15");
       const doneCount = state.points.filter(Boolean).length;
       $("#activePointLabel").textContent = doneCount>=6
         ? "✓ 6 Titik Selesai Direkam"
-        : `✓ Titik ${index+1} selesai — bersiap titik berikutnya…`;
+        : `✓ Titik ${index+1} selesai, bersiap titik berikutnya`;
     }
   });
 
   document.addEventListener("antarakala:all-done", ()=>{
     if(isScreenVisible("proses-auskultasi")){
       $("#activePointLabel").textContent = "✓ 6 Titik Selesai Direkam";
-      showToast("Auskultasi 6 titik selesai — silakan lanjutkan");
+      showToast("Auskultasi 6 titik selesai, silakan lanjutkan");
     }
     updateLanjutButton();
   });
@@ -409,61 +418,106 @@
     next();
   }
 
-  /* ---------------- SCORING SIMULATION ---------------- */
+  /* ---------------- MODEL B: LIGHTGBM REAL INFERENCE ---------------- */
   function computeResult(){
     const p = state.patient, v = state.vitals;
     const dangerAda = Object.values(state.danger).some(x=>x==="ada");
     const chestAda = p.chest === "ada";
-    const override = dangerAda || chestAda || v.spo2 < 90;
 
     const crackleCount = state.points.filter(pt=>pt && pt.result==="crackle").length;
     const wheezeCount  = state.points.filter(pt=>pt && pt.result==="wheeze").length;
 
-    // component scores (0-2 style, matches paper's weighting logic)
-    const spo2Score = v.spo2 < 90 ? 2 : (v.spo2 <= 92 ? 2 : (v.spo2 <= 94 ? 1 : 0));
-    const crackleScore = crackleCount >= 1 ? 2 : 0;
-    // simulated respiratory rate estimation, loosely tied to age + acoustic findings
-    const ageM = parseInt(p.age||"18",10);
-    const rrThreshold = ageM < 2 ? 60 : (ageM <= 11 ? 50 : 40);
+    // CNN/output akustik masih simulasi. Untuk Model B, crackle menjadi fitur boolean:
+    // true bila minimal satu dari enam titik terdeteksi crackle.
+    const cracklePresent = crackleCount >= 1;
+
+    // Estimasi RR belum berasal dari pipeline audio asli, sehingga sementara tetap disimulasikan.
+    const ageM = parseFloat(p.age || "18");
+    const rrThreshold = ageM < 2 ? 60 : (ageM < 12 ? 50 : 40);
     const rrBias = crackleCount>=2 ? 14 : (crackleCount===1 ? 6 : -4);
     const rrValue = Math.round(rrThreshold + rrBias + rand(-6,10));
-    const rrScore = rrValue >= rrThreshold+10 ? 2 : (rrValue >= rrThreshold ? 1 : 0);
-    const tempScore = v.temp >= 38 ? 1 : 0;
-    const nasalScore = (v.flare==="ada" || v.grunt==="ada") ? 1 : 0;
 
-    const wheezeDominant = wheezeCount > crackleCount && wheezeCount >= 1;
-    let total = spo2Score + crackleScore + rrScore + tempScore + nasalScore;
-    if(wheezeDominant) total = Math.max(0, total-2);
+    // Product-level override. Model training hanya memiliki override SpO2<90;
+    // tanda bahaya umum dan chest indrawing dipertahankan sebagai rule keselamatan UI.
+    const override = dangerAda || chestAda || v.spo2 < 90;
 
-    let tier;
-    if(override) tier = "high";
-    else if(total >= 4) tier = "mid";
-    else tier = "low";
+    // 7 fitur persis seperti model training:
+    // age_months, suhu, spo2, rr, status_pcv, flaring_grunting, crackle
+    const modelFeatures = {
+      age_months: ageM,
+      suhu: Number(v.temp),
+      spo2: Number(v.spo2),
+      rr: Number(rrValue),
+      status_pcv: p.pcv === "sudah" ? 1 : 0,
+      flaring_grunting: (v.flare === "ada" || v.grunt === "ada") ? 1 : 0,
+      crackle: cracklePresent ? 1 : 0,
+    };
 
-    const confidence = tier==="high" ? rand(92,98) : tier==="mid" ? rand(82,92) : rand(75,89);
-
-    // build ranked factors (label, rawValue text, weight 0-100, positive=increases risk)
-    const factors = [];
-    factors.push({ label:`Oksigen ${v.spo2<95?"Rendah":"Normal"} (${v.spo2}%)`, weight:spo2Score/2*100, positive: spo2Score>0 || v.spo2<90 });
-    factors.push({ label:"Tarikan Dinding Dada", weight: chestAda?100:0, positive:true, skip: !chestAda });
-    factors.push({ label:`Bunyi Crackle Paru${crackleCount?` (${crackleCount} Titik)`:""}`, weight:crackleScore/2*100, positive:crackleCount>0, skip:crackleCount===0 });
-    factors.push({ label:`Demam (${v.temp.toFixed(1)}°C)`, weight:tempScore*100, positive:tempScore>0, skip:tempScore===0 });
-    factors.push({ label:`Laju Napas Cepat (${rrValue}/mnt)`, weight:rrScore/2*100, positive:rrScore>0, skip:rrScore===0 });
-    factors.push({ label:"Nasal Flaring / Grunting", weight:nasalScore*100, positive:nasalScore>0, skip:nasalScore===0 });
-    if(dangerAda){
-      const activeSign = DANGER_SIGNS.find(d=>state.danger[d.key]==="ada");
-      factors.push({ label:`Tanda Bahaya: ${activeSign?activeSign.title:"Danger Sign"}`, weight:100, positive:true });
+    let mlPred = null;
+    if(!window.ANTARAKALA_LGBM || typeof window.ANTARAKALA_LGBM.predict !== "function" || typeof window.ANTARAKALA_LGBM.explain !== "function") {
+      throw new Error("Model LightGBM/TreeSHAP tidak termuat");
     }
-    if(wheezeDominant) factors.push({ label:`Wheeze Dominan (${wheezeCount} Titik)`, weight:60, positive:false });
+    mlPred = window.ANTARAKALA_LGBM.predict(modelFeatures);
 
-    const finalFactors = factors.filter(f=>!f.skip).sort((a,b)=>b.weight-a.weight).slice(0,5);
-    // normalize relative importance (%) for the "kontribusi utama" screen
-    const sumW = finalFactors.reduce((s,f)=>s+f.weight,0) || 1;
-    finalFactors.forEach(f=> f.relPct = Math.round((f.weight/sumW)*100));
+    const tierMap = { rendah:"low", sedang:"mid", tinggi:"high" };
+    let tier = override ? "high" : tierMap[mlPred.className];
+
+    // Confidence menggunakan probabilitas kelas yang dipilih oleh LightGBM.
+    // Pada override klinis, hasil berasal dari rule sehingga confidence ditampilkan 100%.
+    const classKey = tier === "high" ? "tinggi" : tier === "mid" ? "sedang" : "rendah";
+    const confidence = override ? 100 : (mlPred.probabilities[classKey] * 100);
+
+    // TreeSHAP dijalankan pada kelas hasil yang sedang dijelaskan. Jika rule override
+    // memaksa risiko tinggi, TreeSHAP tetap menjelaskan output kelas "tinggi" LightGBM;
+    // pemicu override disimpan terpisah agar tidak disalahartikan sebagai nilai SHAP.
+    const explainClassIndex = tier === "high" ? 2 : tier === "mid" ? 1 : 0;
+    const shap = window.ANTARAKALA_LGBM.explain(modelFeatures, explainClassIndex);
+
+    const pcvText = p.pcv === "sudah" ? "Sudah" : p.pcv === "belum" ? "Belum" : "Tidak Tahu";
+    const fgText = (v.flare === "ada" || v.grunt === "ada") ? "Ada" : "Tidak";
+    const featureLabels = {
+      age_months: `Usia (${ageM.toFixed(1).replace(/\.0$/,"")} bulan)`,
+      suhu: `Suhu (${Number(v.temp).toFixed(1)}°C)`,
+      spo2: `SpO₂ (${Number(v.spo2)}%)`,
+      rr: `Laju Napas (${rrValue}/menit)`,
+      status_pcv: `Status Imunisasi PCV (${pcvText})`,
+      flaring_grunting: `Nasal Flaring / Grunting (${fgText})`,
+      crackle: cracklePresent ? `Crackle (${crackleCount} titik)` : "Crackle (Tidak terdeteksi)",
+    };
+
+    const absVals = shap.values.map(v=>Math.abs(v));
+    const maxAbs = Math.max(...absVals, 1e-12);
+    const sumAbs = absVals.reduce((a,b)=>a+b,0) || 1;
+    const finalFactors = shap.featureNames.map((name,i)=>({
+      feature: name,
+      label: featureLabels[name] || name,
+      shapValue: shap.values[i],
+      positive: shap.values[i] >= 0,
+      weight: Math.max(2, Math.abs(shap.values[i]) / maxAbs * 100),
+      relPct: Math.abs(shap.values[i]) / sumAbs * 100,
+    })).sort((a,b)=>Math.abs(b.shapValue)-Math.abs(a.shapValue));
+
+    const overrideReasons = [];
+    if(dangerAda){
+      DANGER_SIGNS.filter(d=>state.danger[d.key]==="ada").forEach(d=>overrideReasons.push(`Tanda Bahaya: ${d.title}`));
+    }
+    if(chestAda) overrideReasons.push("Tarikan Dinding Dada");
+    if(v.spo2 < 90) overrideReasons.push(`SpO₂ ${v.spo2}% (<90%)`);
 
     state.result = {
-      tier, confidence, total, override, crackleCount, wheezeCount, rrValue, rrThreshold,
+      tier, confidence, total:null, override, overrideReasons, crackleCount, wheezeCount, rrValue, rrThreshold,
       factors: finalFactors,
+      modelFeatures,
+      modelProbabilities: mlPred.probabilities,
+      modelForcedHigh: mlPred.forcedHigh,
+      modelHighThreshold: mlPred.highThreshold,
+      modelSource: "LightGBM balanced weight, best iteration 87",
+      shapClassName: shap.className,
+      shapClassIndex: shap.classIndex,
+      shapBaseValue: shap.baseValue,
+      shapOutputValue: shap.outputValue,
+      shapSumCheck: shap.sumCheck,
+      shapExact: true,
     };
   }
 
@@ -489,7 +543,7 @@
       <div class="point-result">
         <div class="left">
           <div class="circ" style="background:${colorMap[pt.result]}">${i+1}</div>
-          <b>${pt.name.toUpperCase()}</b>
+          <b>${pt.name}</b>
         </div>
         <span class="tag-${pt.result}">${labelMap[pt.result]}</span>
       </div>`).join("");
@@ -502,14 +556,18 @@
     const box = $("#aiConclusionBox");
     box.className = "alert " + (r.tier==="high"?"alert-red":r.tier==="mid"?"alert-amber":"alert-green");
     $("#aiConclusionTitle").textContent = "Kesimpulan";
-    const top = r.factors.slice(0,3).map(f=>f.label.replace(/\s*\(.*?\)/,"").toLowerCase());
+    const positiveFactors = r.factors.filter(f=>f.positive);
+    const top = (positiveFactors.length ? positiveFactors : r.factors).slice(0,3)
+      .map(f=>f.label.replace(/\s*\(.*?\)/,"").toLowerCase());
     const implication = r.tier==="high" ? "PNEUMONIA BERAT YANG MEMBUTUHKAN RUJUKAN SEGERA KE RS/IGD."
       : r.tier==="mid" ? "KEMUNGKINAN PNEUMONIA YANG MEMERLUKAN TERAPI ANTIBIOTIK ORAL DAN OBSERVASI KETAT."
       : "KONDISI STABIL TANPA TANDA PNEUMONIA YANG SIGNIFIKAN.";
-    $("#aiConclusionText").textContent =
-      `Pasien dinilai ${RESULT_TEXT[r.tier].label} karena ditemukan ${top.join(", ")}. Kondisi ini menunjukkan ${implication}`;
+    if(r.override){
+      $("#aiConclusionText").textContent = `Pasien dinilai ${RESULT_TEXT[r.tier].label} karena override klinis: ${r.overrideReasons.join(", ")}. TreeSHAP LightGBM untuk kelas tinggi terutama didorong oleh ${top.join(", ")}.`;
+    } else {
+      $("#aiConclusionText").textContent = `Pasien dinilai ${RESULT_TEXT[r.tier].label}. TreeSHAP menunjukkan faktor yang paling mendorong kelas hasil adalah ${top.join(", ")}. Kondisi ini menunjukkan ${implication}`;
+    }
 
-    drawSpectrogram(r.tier, r.crackleCount);
   }
 
   function drawSpectrogram(tier, crackleCount){
@@ -543,23 +601,32 @@
   }
 
   /* ---------------- FAKTOR RISIKO / KONTRIBUSI ---------------- */
-  function factorRowHTML(f, showRightPct){
-    const fillClass = !f.positive ? "fill-low" : (f.weight>=70?"fill-high":"fill-mid");
-    const barWidth = showRightPct ? f.weight : f.weight; // visual length uses raw weight either way
+  function factorRowHTML(f, showValue){
+    const barWidth = clamp(Number(f.weight)||0, 0, 100);
+    const value = Number(f.shapValue)||0;
+    const shapText = `${value>=0?"+":"−"}${Math.abs(value).toFixed(3)}`;
     return `<div class="factor-row">
       <div class="factor-top">
         <b>${f.label}</b>
-        ${showRightPct ? `<span style="color:${f.positive?'var(--red-600)':'var(--green-700)'}">${f.relPct}%</span>` : ""}
+        ${showValue ? `<span class="shap-value ${f.positive?'pos':'neg'}" title="Nilai TreeSHAP pada raw score kelas hasil">${shapText}</span>` : ""}
       </div>
-      <div class="factor-track"><div class="factor-fill ${f.positive? (f.weight>=70?'fill-high':'fill-mid') : 'fill-low'}" style="width:${barWidth}%"></div></div>
+      <div class="factor-track"><div class="factor-fill ${f.positive?'fill-shap-pos':'fill-shap-neg'}" style="width:${barWidth}%"></div></div>
     </div>`;
   }
 
   function renderFaktorRisiko(){
     const r = state.result; if(!r) return;
     $("#whyTitle").textContent = "Mengapa " + RESULT_TEXT[r.tier].label.replace("RISIKO ","Risiko ") + "?";
-    $("#factorBars").innerHTML = r.factors.map(f=>factorRowHTML(f,false)).join("");
+    $("#factorBars").innerHTML = r.factors.map(f=>factorRowHTML(f,true)).join("");
     $("#confidenceVal").textContent = r.confidence.toFixed(1)+"%";
+    if($("#shapMeta")) {
+      const cls = r.shapClassName ? r.shapClassName.toUpperCase() : "HASIL";
+      $("#shapMeta").textContent = `TreeSHAP kelas ${cls} • base ${r.shapBaseValue.toFixed(3)} • output ${r.shapOutputValue.toFixed(3)}`;
+    }
+    if($("#shapOverrideNote")) {
+      $("#shapOverrideNote").style.display = r.override ? "block" : "none";
+      if(r.override) $("#shapOverrideNote").textContent = `Hasil risiko tinggi dipicu override klinis: ${r.overrideReasons.join(", ")}. Grafik TreeSHAP tetap menjelaskan skor kelas TINGGI dari LightGBM.`;
+    }
   }
 
   function renderFaktorKontribusi(){
@@ -627,6 +694,7 @@
           </div>
           <h4 style="margin-top:6px;">${h.name}</h4>
           <p>ID: ${h.id}</p>
+          <p style="margin-top:4px; font-weight:700; color:var(--ink-700);">${RISK_LABEL[h.tier] || RISK_LABEL.low}</p>
           <p style="margin-top:6px; display:flex; gap:14px;">
             <span>≋ SpO2: ${h.spo2}%</span>
           </p>
@@ -645,7 +713,7 @@
     if(!r){ showToast("Belum ada hasil untuk diunduh"); return; }
     const p = state.patient, v = state.vitals;
     const html = `<!DOCTYPE html><html lang="id"><head><meta charset="utf-8">
-    <title>Laporan Skrining ANTARAKALA — ${p.name||"Pasien"}</title>
+    <title>Laporan Skrining ANTARAKALA, ${p.name||"Pasien"}</title>
     <style>
       body{font-family:Arial,sans-serif; max-width:640px; margin:40px auto; color:#151A18;}
       h1{color:#00A3AE; font-size:22px; margin-bottom:2px;}
@@ -658,7 +726,7 @@
       .factor{display:flex; justify-content:space-between; font-size:13px; padding:5px 0; border-bottom:1px dashed #eee;}
       footer{margin-top:26px; font-size:11px; color:#9AA39D; line-height:1.6;}
     </style></head><body>
-      <h1>Laporan Hasil Skrining — ANTARAKALA</h1>
+      <h1>Laporan Hasil Skrining, ANTARAKALA</h1>
       <div class="tag">${RESULT_TEXT[r.tier].label}</div>
       <table>
         <tr><td>Nama Pasien</td><td>${p.name||"—"}</td></tr>
@@ -670,11 +738,11 @@
         <tr><td>Rekomendasi Tindakan</td><td>${RESULT_TEXT[r.tier].action}</td></tr>
         <tr><td>Tingkat Kepercayaan AI</td><td>${r.confidence.toFixed(1)}%</td></tr>
       </table>
-      <h3>Faktor Kontribusi Utama (TreeSHAP)</h3>
-      ${r.factors.map(f=>`<div class="factor"><span>${f.label}</span><span>${f.relPct}%</span></div>`).join("")}
+      <h3>Faktor Kontribusi Utama (TreeSHAP, kelas ${String(r.shapClassName||"").toUpperCase()})</h3>
+      ${r.factors.map(f=>`<div class="factor"><span>${f.label}</span><span>${f.shapValue>=0?"+":"−"}${Math.abs(f.shapValue).toFixed(3)}</span></div>`).join("")}
       <footer>
         Dokumen ini dihasilkan oleh prototipe antarmuka ANTARAKALA untuk keperluan demonstrasi KMIPN VIII 2026.
-        Seluruh nilai bersifat simulasi dan tidak merepresentasikan hasil diagnosis medis sesungguhnya.
+        Klasifikasi suara paru CNN dan estimasi laju napas pada purwarupa ini masih disimulasikan; inferensi LightGBM dan nilai TreeSHAP dihitung dari model yang terintegrasi. Hasil ini bukan diagnosis medis.
         Dibuat: ${new Date().toLocaleString("id-ID")}
       </footer>
     </body></html>`;
