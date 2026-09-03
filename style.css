@@ -5,7 +5,7 @@
 
 *{box-sizing:border-box; margin:0; padding:0;}
 html,body{height:100%; overflow:hidden;}
-body{font-family:var(--font-body); color:var(--ink-900); background:#0000}
+body{font-family:var(--font-body); color:var(--ink-900); background:#000}
     /* radial-gradient(1200px 600px at 12% -10%, #0B3A42 0%, #072A30 45%, #051D22 100%); height:100vh; -webkit-font-smoothing:antialiased;} */
 
 button{font-family:inherit; cursor:pointer;}
@@ -429,7 +429,7 @@ a{color:inherit;}
   position:absolute;
   top:100%;
   left:0;
-  margin-top:12px;
+  margin-top:5px;
   width:min(480px, 44vw);
   font-size:10px;
   line-height:1.55;
