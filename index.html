@@ -23,6 +23,7 @@
 
     <!-- ============ PHONE MOCKUP (centered) ============ -->
     <div class="phone-wrap">
+      <div class="phone-caption-vertical">WEB LOKAL ANTARAKALA</div>
       <div class="phone">
         <div class="side-power"></div>
         <div class="side-vol1"></div>
@@ -581,29 +582,146 @@
 
     <!-- ============ PHYSICAL DEVICE MOCKUP ============ -->
     <div class="device-wrap">
-      <div class="device-caption">
-        <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><rect x="4" y="2" width="16" height="20" rx="2"/><path d="M9 18h6"/></svg>
-        <span><b>PERANGKAT FISIK ANTARAKALA</b><br>Dioperasikan langsung oleh nakes via LCD &amp; 3 tombol ini</span>
-      </div>
-      <div class="device">
-        <img src="assets/device.png" alt="Perangkat fisik ANTARAKALA" class="device-img" draggable="false">
-        <div class="device-led led-red" id="deviceLed" title="Indikator status rekam"></div>
-        <div class="device-lcd" id="deviceLcd"></div>
-        <button class="device-btn btn-kiri" data-devbtn="kiri" aria-label="Geser kursor kiri"></button>
-        <button class="device-btn btn-pilih" data-devbtn="pilih" aria-label="Pilih / konfirmasi"></button>
-        <button class="device-btn btn-kanan" data-devbtn="kanan" aria-label="Geser kursor kanan"></button>
-        <div class="device-label lbl-kiri">◀ Kiri</div>
-        <div class="device-label lbl-pilih">Pilih</div>
-        <div class="device-label lbl-kanan">Kanan ▶</div>
-      </div>
-      <div class="device-disclaimer">
-        Purwarupa ini telah mengintegrasikan inferensi Model B LightGBM dan perhitungan TreeSHAP secara lokal di browser. Klasifikasi suara paru CNN dan estimasi laju napas masih disimulasikan untuk kebutuhan demonstrasi. Hasil purwarupa merupakan alat bantu skrining dan bukan diagnosis medis.
+      <div class="device-diagram-row">
+
+        <div class="device-column">
+          <div class="device-caption">
+            <svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><rect x="4" y="2" width="16" height="20" rx="2"/><path d="M9 18h6"/></svg>
+            <span><b>PERANGKAT FISIK ANTARAKALA</b><br>Dioperasikan langsung oleh nakes via LCD &amp; 3 tombol ini</span>
+          </div>
+
+          <div class="device">
+            <img src="assets/device.png" alt="Perangkat fisik ANTARAKALA" class="device-img" draggable="false">
+            <div class="device-led led-red" id="deviceLed" title="Indikator status rekam"></div>
+            <div class="device-lcd" id="deviceLcd"></div>
+            <button class="device-btn btn-kiri" data-devbtn="kiri" aria-label="Geser kursor kiri"></button>
+            <button class="device-btn btn-pilih" data-devbtn="pilih" aria-label="Pilih / konfirmasi"></button>
+            <button class="device-btn btn-kanan" data-devbtn="kanan" aria-label="Geser kursor kanan"></button>
+            <div class="device-label lbl-kiri">◀ Kiri</div>
+            <div class="device-label lbl-pilih">Pilih</div>
+            <div class="device-label lbl-kanan">Kanan ▶</div>
+            <div class="device-port" id="devicePort"></div>
+          </div>
+
+          <div class="device-disclaimer">
+            Purwarupa ini telah mengintegrasikan inferensi Model B LightGBM dan perhitungan TreeSHAP secara lokal di browser. Klasifikasi suara paru CNN dan estimasi laju napas masih disimulasikan untuk kebutuhan demonstrasi. Hasil purwarupa merupakan alat bantu skrining dan bukan diagnosis medis.
+          </div>
+        </div>
+
+        <div class="diagram-stage">
+          <div class="diagram-caption-row">
+            <div class="diagram-caption">Seret stetoskop ke titik auskultasi di bawah ini</div>
+            <button class="view-toggle" id="viewToggle" type="button">Lihat Belakang ↻</button>
+          </div>
+          <div class="diagram-frame">
+            <img src="assets/auskultasi-anak-depan.png" alt="2 titik auskultasi paru anterior pada tubuh anak" class="diagram-img" id="diagramImg" draggable="false">
+            <div class="point-layer" id="pointLayerFront">
+              <button class="point" data-idx="4" style="left:58.5%; top:57%;" aria-label="Titik Anterior Atas Kiri">
+                <span class="point-num">5</span>
+              </button>
+              <button class="point" data-idx="5" style="left:41.5%; top:57%;" aria-label="Titik Anterior Atas Kanan">
+                <span class="point-num">6</span>
+              </button>
+            </div>
+            <div class="point-layer" id="pointLayerBack" hidden>
+              <button class="point" data-idx="0" style="left:32%; top:57%;" aria-label="Titik Posterior Atas Kiri">
+                <span class="point-num">1</span>
+              </button>
+              <button class="point" data-idx="1" style="left:64%; top:57%;" aria-label="Titik Posterior Atas Kanan">
+                <span class="point-num">2</span>
+              </button>
+              <button class="point" data-idx="2" style="left:34%; top:71%;" aria-label="Titik Posterior Bawah Kiri">
+                <span class="point-num">3</span>
+              </button>
+              <button class="point" data-idx="3" style="left:62%; top:71%;" aria-label="Titik Posterior Bawah Kanan">
+                <span class="point-num">4</span>
+              </button>
+            </div>
+          </div>
+
+          <div class="diagram-note">
+            *Ilustrasi anak dibuat dengan bantuan AI generatif. Titik 1-4 di punggung (posterior), titik 5-6 di dada (anterior) — pakai tombol "Lihat Belakang/Depan" di atas untuk berpindah tampilan.
+          </div>
+        </div>
+
+        <svg class="cable-svg" id="cableSvg"><path id="cablePath" fill="none"></path></svg>
+        <img src="assets/probe.png" class="device-probe" id="deviceProbe" alt="Probe stetoskop" draggable="false">
       </div>
     </div>
 
   </div>
 </div>
 
+<script>
+  (function(){
+    var toggleBtn = document.getElementById('viewToggle');
+    var img = document.getElementById('diagramImg');
+    var frontLayer = document.getElementById('pointLayerFront');
+    var backLayer = document.getElementById('pointLayerBack');
+    var showingFront = true;
+    function setView(front){
+      if(front === showingFront) return;
+      showingFront = front;
+      if(showingFront){
+        img.src = 'assets/auskultasi-anak-depan.png';
+        img.alt = '2 titik auskultasi paru anterior pada tubuh anak';
+        frontLayer.hidden = false;
+        backLayer.hidden = true;
+        toggleBtn.textContent = 'Lihat Belakang ↻';
+      } else {
+        img.src = 'assets/auskultasi-anak-belakang.png';
+        img.alt = '4 titik auskultasi paru posterior pada tubuh anak';
+        frontLayer.hidden = true;
+        backLayer.hidden = false;
+        toggleBtn.textContent = 'Lihat Depan ↻';
+      }
+      requestAnimationFrame(function(){
+        if(window.AntarakalaDevice && window.AntarakalaDevice.onViewSwitched) window.AntarakalaDevice.onViewSwitched();
+      });
+    }
+    toggleBtn.addEventListener('click', function(){ setView(!showingFront); });
+    window.__setAntarakalaView = setView; // dipanggil device.js supaya tampilan otomatis ikut titik aktif
+  })();
+</script>
+<script>
+  (function(){
+    var showcase = document.querySelector('.showcase');
+    function fit(){
+      showcase.style.transform = 'none';
+      var full = showcase.getBoundingClientRect();
+      var phoneR = document.querySelector('.phone').getBoundingClientRect();
+      var deviceR = document.querySelector('.device').getBoundingClientRect();
+      var diagramEl = document.querySelector('.diagram-stage');
+      var diagramR = diagramEl ? diagramEl.getBoundingClientRect() : deviceR;
+
+      var coreLeft = Math.min(phoneR.left, deviceR.left, diagramR.left) - full.left;
+      var coreRight = Math.max(phoneR.right, deviceR.right, diagramR.right) - full.left;
+      var coreTop = Math.min(phoneR.top, deviceR.top, diagramR.top) - full.top;
+      var coreBottom = Math.max(phoneR.bottom, deviceR.bottom, diagramR.bottom) - full.top;
+      var coreCenterX = (coreLeft + coreRight) / 2;
+      var coreCenterY = (coreTop + coreBottom) / 2;
+
+      var availW = window.innerWidth - 24;
+      var availH = window.innerHeight - 24;
+      var scale = Math.min(availW / full.width, availH / full.height);
+
+      var targetX = window.innerWidth / 2;
+      var targetY = window.innerHeight / 2;
+      var tx = targetX - scale * coreCenterX;
+      var ty = targetY - scale * coreCenterY;
+
+      showcase.style.transform = 'translate(' + tx + 'px,' + ty + 'px) scale(' + scale + ')';
+      window.__antarakalaScale = scale;
+      document.dispatchEvent(new CustomEvent('antarakala:scale-changed', { detail:{ scale: scale } }));
+    }
+    window.addEventListener('resize', fit);
+    window.addEventListener('orientationchange', fit);
+    if(document.fonts && document.fonts.ready){ document.fonts.ready.then(fit); }
+    window.addEventListener('load', fit);
+    document.addEventListener('DOMContentLoaded', fit);
+    fit();
+  })();
+</script>
 <script src="lightgbm_model.js"></script>
 <script src="app.js"></script>
 <script src="device.js"></script>

@@ -46,7 +46,7 @@
     const positions = [
       {n:1, x:44, y:40}, {n:2, x:70, y:40},
       {n:3, x:42, y:62}, {n:4, x:72, y:62},
-      {n:5, x:152, y:46}, {n:6, x:178, y:46},
+      {n:5, x:178, y:46}, {n:6, x:152, y:46},
     ];
     const circles = positions.map((p,i)=>{
       const isActive = i === D.cursor;
@@ -95,6 +95,7 @@
     const el = lcd();
     if(!el) return;
     updateLED();
+    syncPointVisuals();
 
     if(!D.phoneReady && D.state === "idle"){
       el.innerHTML = `
@@ -165,12 +166,14 @@
     if(!D.phoneReady){ flashDenied(); return; }
     if(D.state !== "idle") return;
     D.cursor = (D.cursor + 5) % 6;
+    autoSwitchViewForCursor();
     render();
   }
   function pressKanan(){
     if(!D.phoneReady){ flashDenied(); return; }
     if(D.state !== "idle") return;
     D.cursor = (D.cursor + 1) % 6;
+    autoSwitchViewForCursor();
     render();
   }
   function pressPilih(){
@@ -233,10 +236,150 @@
       } else {
         D.cursor = next;
         D.state = "idle";
+        autoSwitchViewForCursor();
         render();
       }
     }, 1100);
   }
+
+  /* ---------- posisi stetoskop (docking ke port alat) + gambar kabel + drag-drop ---------- */
+  function scaleFactor(){ return window.__antarakalaScale || 1; }
+  function stageEl(){ return $(".device-diagram-row"); }
+  function probeEl(){ return $("#deviceProbe"); }
+  function portEl(){ return $("#devicePort"); }
+
+  /* ---------- diagram markers (sinkron dengan D.cursor/D.done), lintas 2 layer (depan/belakang) ---------- */
+  function syncPointVisuals(){
+    const pts = document.querySelectorAll(".diagram-stage .point");
+    if(!pts.length) return;
+    pts.forEach((p)=>{
+      const i = parseInt(p.dataset.idx, 10);
+      const done = D.done[i];
+      const isActive = i === D.cursor && D.state !== "allDone";
+      p.classList.toggle("done", !!done);
+      p.classList.toggle("selected", isActive && (D.state === "idle" || D.state === "recording" || D.state === "badsignal") && !done);
+    });
+  }
+
+  function autoSwitchViewForCursor(){
+    // dipanggil HANYA saat titik aktif benar2 berganti (bukan tiap render),
+    // supaya tidak "menarik balik" toggle manual milik pengguna
+    if(window.__setAntarakalaView) window.__setAntarakalaView(D.cursor >= 4);
+  }
+
+  function pointElsList(){
+    // hanya titik yang SEDANG TAMPIL (layer depan/belakang yang aktif), bukan yang di-hidden
+    return Array.from(document.querySelectorAll(".diagram-stage .point")).filter(p => p.offsetParent !== null);
+  }
+
+  function updateCable(){
+    const stage = stageEl(), probe = probeEl(), port = portEl();
+    const path = $("#cablePath");
+    if(!stage || !probe || !port || !path) return;
+    const s = scaleFactor();
+    const stageR = stage.getBoundingClientRect();
+    const portR = port.getBoundingClientRect();
+    const probeR = probe.getBoundingClientRect();
+    const x0 = (portR.left - stageR.left)/s + portR.width/s/2;
+    const y0 = (portR.top - stageR.top)/s + portR.height/s/2;
+    const x1 = (probeR.left - stageR.left)/s + probeR.width/s/2;
+    const y1 = (probeR.top - stageR.top)/s + probeR.height/s*0.28;
+    const dist = Math.hypot(x1-x0, y1-y0);
+    const sag = Math.min(70, dist*0.22);
+    const mx = (x0+x1)/2, my = (y0+y1)/2 + sag;
+    path.setAttribute("d", `M ${x0} ${y0} Q ${mx} ${my} ${x1} ${y1}`);
+  }
+
+  function resetProbePosition(animate){
+    const stage = stageEl(), probe = probeEl(), port = portEl();
+    if(!stage || !probe || !port) return;
+    const s = scaleFactor();
+    const stageR = stage.getBoundingClientRect();
+    const portR = port.getBoundingClientRect();
+    const x = (portR.left - stageR.left)/s - 4;
+    const y = (portR.top - stageR.top)/s - 25;
+    if(animate){
+      probe.classList.add("snap-transition");
+      probe.style.left = x + "px";
+      probe.style.top = y + "px";
+      animateCableFor(400);
+      setTimeout(()=>probe.classList.remove("snap-transition"), 400);
+    } else {
+      probe.style.left = x + "px";
+      probe.style.top = y + "px";
+      requestAnimationFrame(updateCable);
+    }
+  }
+
+  function animateCableFor(ms){
+    const start = performance.now();
+    function step(t){
+      updateCable();
+      if(t - start < ms) requestAnimationFrame(step);
+    }
+    requestAnimationFrame(step);
+  }
+
+  function findNearestPoint(clientX, clientY){
+    let best = null, bestDist = 9999;
+    pointElsList().forEach(p=>{
+      if(p.classList.contains("done")) return;
+      const r = p.getBoundingClientRect();
+      const cx = r.left + r.width/2, cy = r.top + r.height/2;
+      const d = Math.hypot(clientX-cx, clientY-cy);
+      if(d < 46 && d < bestDist){ bestDist = d; best = p; }
+    });
+    return best;
+  }
+  function clearDragoverHighlights(){
+    pointElsList().forEach(p=>p.classList.remove("dragover"));
+  }
+
+  function dropOnPoint(idx){
+    if(!D.phoneReady || D.state !== "idle") return;
+    D.cursor = idx;
+    render();
+  }
+
+  let dragging = false, dragOffX = 0, dragOffY = 0;
+
+  function bindProbeDrag(){
+    const probe = probeEl();
+    if(!probe) return;
+    probe.addEventListener("pointerdown", (e)=>{
+      if(!D.phoneReady || D.state !== "idle"){ flashDenied(); return; }
+      dragging = true;
+      probe.classList.remove("snap-transition");
+      probe.setPointerCapture(e.pointerId);
+      const s = scaleFactor();
+      const r = probe.getBoundingClientRect();
+      dragOffX = (e.clientX - r.left)/s; dragOffY = (e.clientY - r.top)/s;
+    });
+    probe.addEventListener("pointermove", (e)=>{
+      if(!dragging) return;
+      const s = scaleFactor();
+      const stageR = stageEl().getBoundingClientRect();
+      probe.style.left = ((e.clientX - stageR.left)/s - dragOffX) + "px";
+      probe.style.top = ((e.clientY - stageR.top)/s - dragOffY) + "px";
+      updateCable();
+      clearDragoverHighlights();
+      const p = findNearestPoint(e.clientX, e.clientY);
+      if(p) p.classList.add("dragover");
+    });
+    probe.addEventListener("pointerup", (e)=>{
+      if(!dragging) return;
+      dragging = false;
+      const target = findNearestPoint(e.clientX, e.clientY);
+      clearDragoverHighlights();
+      if(target){
+        dropOnPoint(parseInt(target.dataset.idx, 10));
+      } else {
+        resetProbePosition(true);
+      }
+    });
+  }
+
+  window.addEventListener("resize", ()=>requestAnimationFrame(resetProbePosition));
 
   /* ---------- public snapshot for app.js ---------- */
   window.AntarakalaDevice = {
@@ -248,6 +391,11 @@
         results: D.results.slice(),
         pointNames: POINT_NAMES.slice(),
       };
+    },
+    onViewSwitched(){
+      // dipanggil dari index.html saat gambar depan/belakang berganti (manual atau otomatis)
+      syncPointVisuals();
+      requestAnimationFrame(resetProbePosition);
     }
   };
 
@@ -264,11 +412,15 @@
       };
       btn.addEventListener("click", fire);
     });
+    bindProbeDrag();
   }
 
   document.addEventListener("DOMContentLoaded", ()=>{
     bind();
     render();
+    // beri jeda sedikit supaya .showcase sudah selesai di-scale oleh script
+    // fit() di index.html sebelum menghitung posisi docking probe
+    setTimeout(resetProbePosition, 60);
   });
 
   document.addEventListener("antarakala:phone-nav", (e)=>{
