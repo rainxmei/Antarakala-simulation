@@ -25,6 +25,7 @@
     recElapsed: 0,
     recTimer: null,
     phoneReady: false, // true only when phone/HP is on the "proses-auskultasi" screen
+    probeDockedPoint: null, // indeks titik yang benar-benar ditempeli kepala stetoskop
   };
 
   const $ = (sel) => document.querySelector(sel);
@@ -132,7 +133,10 @@
     } else if(res){
       resultHTML = `<b style="color:${RESULT_COLORS[res.result]};">${RESULT_LABELS[res.result]}</b><span>${res.confidence}% Keyakinan</span>`;
     } else {
-      resultHTML = `<b style="color:#3A423F; font-size:8px;">SIAP MEREKAM</b><span>Tekan PILIH untuk mulai</span>`;
+      const probeReady = D.probeDockedPoint === D.cursor;
+      resultHTML = probeReady
+        ? `<b style="color:#00A3AE; font-size:8px;">POSISI TEPAT</b><span>Tekan PILIH untuk mulai</span>`
+        : `<b style="color:#3A423F; font-size:8px;">SIAP MEREKAM</b><span>Tempelkan stetoskop ke titik yang dipilih</span>`;
     }
 
     const pointLabel = allDone ? "6/6 TITIK TEREKAM" : POINT_NAMES[D.cursor].toUpperCase();
@@ -166,19 +170,28 @@
     if(!D.phoneReady){ flashDenied(); return; }
     if(D.state !== "idle") return;
     D.cursor = (D.cursor + 5) % 6;
+    D.probeDockedPoint = null;
     autoSwitchViewForCursor();
     render();
+    requestAnimationFrame(()=>resetProbePosition(true));
   }
   function pressKanan(){
     if(!D.phoneReady){ flashDenied(); return; }
     if(D.state !== "idle") return;
     D.cursor = (D.cursor + 1) % 6;
+    D.probeDockedPoint = null;
     autoSwitchViewForCursor();
     render();
+    requestAnimationFrame(()=>resetProbePosition(true));
   }
   function pressPilih(){
     if(!D.phoneReady){ flashDenied(); return; }
     if(D.state === "idle"){
+      if(D.probeDockedPoint !== D.cursor){
+        flashDenied();
+        emit("antarakala:probe-required", { index:D.cursor, name:POINT_NAMES[D.cursor] });
+        return;
+      }
       startRecording();
       return;
     }
@@ -229,15 +242,18 @@
 
     setTimeout(()=>{
       const next = D.done.findIndex(v=>!v);
+      D.probeDockedPoint = null;
       if(next === -1){
         D.state = "allDone";
         render();
+        requestAnimationFrame(()=>resetProbePosition(true));
         emit("antarakala:all-done", {});
       } else {
         D.cursor = next;
         D.state = "idle";
         autoSwitchViewForCursor();
         render();
+        requestAnimationFrame(()=>resetProbePosition(true));
       }
     }, 1100);
   }
@@ -258,6 +274,7 @@
       const isActive = i === D.cursor && D.state !== "allDone";
       p.classList.toggle("done", !!done);
       p.classList.toggle("selected", isActive && (D.state === "idle" || D.state === "recording" || D.state === "badsignal") && !done);
+      p.classList.toggle("docked", D.probeDockedPoint === i && !done);
     });
   }
 
@@ -290,9 +307,14 @@
     path.setAttribute("d", `M ${x0} ${y0} Q ${mx} ${my} ${x1} ${y1}`);
   }
 
+  const PROBE_CONTACT_X = 0.50;
+  const PROBE_CONTACT_Y = 0.63;
+
   function resetProbePosition(animate){
     const stage = stageEl(), probe = probeEl(), port = portEl();
     if(!stage || !probe || !port) return;
+    D.probeDockedPoint = null;
+    syncPointVisuals();
     const s = scaleFactor();
     const stageR = stage.getBoundingClientRect();
     const portR = port.getBoundingClientRect();
@@ -311,6 +333,37 @@
     }
   }
 
+  function probeContactClient(){
+    const probe = probeEl();
+    if(!probe) return null;
+    const r = probe.getBoundingClientRect();
+    return {
+      x: r.left + r.width * PROBE_CONTACT_X,
+      y: r.top + r.height * PROBE_CONTACT_Y,
+    };
+  }
+
+  function snapProbeToPoint(point, animate){
+    const stage = stageEl(), probe = probeEl();
+    if(!stage || !probe || !point) return;
+    const s = scaleFactor();
+    const stageR = stage.getBoundingClientRect();
+    const pointR = point.getBoundingClientRect();
+    const targetX = (pointR.left - stageR.left)/s + pointR.width/(2*s);
+    const targetY = (pointR.top - stageR.top)/s + pointR.height/(2*s);
+    const x = targetX - probe.offsetWidth * PROBE_CONTACT_X;
+    const y = targetY - probe.offsetHeight * PROBE_CONTACT_Y;
+    if(animate) probe.classList.add("snap-transition");
+    probe.style.left = x + "px";
+    probe.style.top = y + "px";
+    if(animate){
+      animateCableFor(360);
+      setTimeout(()=>probe.classList.remove("snap-transition"), 360);
+    } else {
+      requestAnimationFrame(updateCable);
+    }
+  }
+
   function animateCableFor(ms){
     const start = performance.now();
     function step(t){
@@ -320,14 +373,23 @@
     requestAnimationFrame(step);
   }
 
-  function findNearestPoint(clientX, clientY){
-    let best = null, bestDist = 9999;
+  function findNearestPoint(){
+    const contact = probeContactClient();
+    if(!contact) return null;
+    let best = null, bestDist = Infinity;
     pointElsList().forEach(p=>{
+      const idx = parseInt(p.dataset.idx, 10);
       if(p.classList.contains("done")) return;
       const r = p.getBoundingClientRect();
       const cx = r.left + r.width/2, cy = r.top + r.height/2;
-      const d = Math.hypot(clientX-cx, clientY-cy);
-      if(d < 46 && d < bestDist){ bestDist = d; best = p; }
+      const d = Math.hypot(contact.x-cx, contact.y-cy);
+
+      // Hit-test benar-benar mengikuti lingkaran marker.
+      // Toleransi hanya sedikit di LUAR tepi lingkaran (±2.5 px layar),
+      // jadi kepala stetoskop harus tampak tepat menempel pada titik.
+      const pointRadius = Math.min(r.width, r.height) / 2;
+      const threshold = pointRadius + 2.5;
+      if(d <= threshold && d < bestDist){ bestDist = d; best = p; }
     });
     return best;
   }
@@ -335,10 +397,19 @@
     pointElsList().forEach(p=>p.classList.remove("dragover"));
   }
 
-  function dropOnPoint(idx){
-    if(!D.phoneReady || D.state !== "idle") return;
+  function dropOnPoint(point){
+    if(!D.phoneReady || D.state !== "idle" || !point) return;
+    const idx = parseInt(point.dataset.idx, 10);
+    if(!Number.isInteger(idx) || D.done[idx]) return;
+
+    // Probe boleh ditempel ke titik mana pun yang belum selesai.
+    // Posisi fisik probe menjadi pilihan titik pada alat, bukan sebaliknya.
     D.cursor = idx;
+    D.probeDockedPoint = idx;
+    autoSwitchViewForCursor();
+    snapProbeToPoint(point, true);
     render();
+    emit("antarakala:probe-docked", { index:idx, name:POINT_NAMES[idx] });
   }
 
   let dragging = false, dragOffX = 0, dragOffY = 0;
@@ -349,6 +420,9 @@
     probe.addEventListener("pointerdown", (e)=>{
       if(!D.phoneReady || D.state !== "idle"){ flashDenied(); return; }
       dragging = true;
+      D.probeDockedPoint = null;
+      syncPointVisuals();
+      render();
       probe.classList.remove("snap-transition");
       probe.setPointerCapture(e.pointerId);
       const s = scaleFactor();
@@ -363,23 +437,32 @@
       probe.style.top = ((e.clientY - stageR.top)/s - dragOffY) + "px";
       updateCable();
       clearDragoverHighlights();
-      const p = findNearestPoint(e.clientX, e.clientY);
+      const p = findNearestPoint();
       if(p) p.classList.add("dragover");
     });
     probe.addEventListener("pointerup", (e)=>{
       if(!dragging) return;
       dragging = false;
-      const target = findNearestPoint(e.clientX, e.clientY);
+      const target = findNearestPoint();
       clearDragoverHighlights();
       if(target){
-        dropOnPoint(parseInt(target.dataset.idx, 10));
+        dropOnPoint(target);
       } else {
         resetProbePosition(true);
+        render();
       }
     });
   }
 
-  window.addEventListener("resize", ()=>requestAnimationFrame(resetProbePosition));
+  window.addEventListener("resize", ()=>requestAnimationFrame(()=>{
+    if(D.probeDockedPoint !== null){
+      const p = pointElsList().find(el=>parseInt(el.dataset.idx,10)===D.probeDockedPoint);
+      if(p) snapProbeToPoint(p, false);
+      else resetProbePosition(false);
+    } else {
+      resetProbePosition(false);
+    }
+  }));
 
   /* ---------- public snapshot for app.js ---------- */
   window.AntarakalaDevice = {
@@ -393,9 +476,10 @@
       };
     },
     onViewSwitched(){
-      // dipanggil dari index.html saat gambar depan/belakang berganti (manual atau otomatis)
+      // Pergantian sisi tubuh membatalkan docking agar titik berikutnya harus diposisikan ulang.
+      D.probeDockedPoint = null;
       syncPointVisuals();
-      requestAnimationFrame(resetProbePosition);
+      requestAnimationFrame(()=>{ resetProbePosition(false); render(); });
     }
   };
 
@@ -427,6 +511,11 @@
     const ready = e.detail.screen === "proses-auskultasi";
     if(ready !== D.phoneReady){
       D.phoneReady = ready;
+      if(ready){
+        // Saat layar auskultasi dibuka, tampilkan sisi tubuh sesuai titik aktif.
+        autoSwitchViewForCursor();
+        requestAnimationFrame(()=>resetProbePosition(false));
+      }
       render();
     }
   });

@@ -118,7 +118,7 @@ a{color:inherit;}
 .btn-ghost{background:transparent; border:1.5px solid var(--border); color:var(--ink-700);}
 .btn-danger-outline{background:#fff; border:1.5px solid var(--red-600); color:var(--red-600);}.btn-row{display:flex; gap:8.5px;}
 .btn-row .btn{flex:1;}
-.btn[disabled]{opacity:.45; pointer-events:none;}.danger-item{background:var(--white); border-radius:var(--radius-lg); border:1px solid var(--border); box-shadow:var(--shadow-card); padding:14px; margin-bottom:10.5px;}.danger-item-top{display:flex; gap:10.5px; margin-bottom:10.5px;}.danger-icon{width:32.5px; height:32.5px; border-radius:50%; background:var(--red-100); color:var(--red-600); display:flex; align-items:center; justify-content:center; flex:0 0 auto;}.danger-icon svg{width:15.5px; height:15.5px;}.danger-item h4{font-size:20.5px; font-weight:700; margin-bottom:2.5px;}.danger-item p{font-size:17.5px; color:var(--ink-500); line-height:1.5;}.alert{border-radius:var(--radius-md); padding:12px 14px; margin-bottom:14px; display:flex; gap:8.5px; align-items:flex-start;}.alert svg{width:15.5px; height:15.5px; flex:0 0 auto; margin-top:1px;}
+.btn[disabled]{opacity:.45; pointer-events:none;}.danger-item{background:var(--white); border-radius:var(--radius-lg); border:1px solid var(--border); box-shadow:var(--shadow-card); padding:14px; margin-bottom:10.5px;}.danger-item-top{display:flex; gap:10.5px; margin-bottom:10.5px;}.danger-icon{width:32.5px; height:32.5px; border-radius:50%; background:var(--red-100); color:var(--red-600); display:flex; align-items:center; justify-content:center; flex:0 0 auto;}.danger-icon svg{width:15.5px; height:15.5px;}.danger-item h4{font-size:20.5px; font-weight:700; margin-bottom:2.5px;}.danger-item p{font-size:12.5px; color:var(--ink-500); line-height:1.4;}.alert{border-radius:var(--radius-md); padding:12px 14px; margin-bottom:14px; display:flex; gap:8.5px; align-items:flex-start;}.alert svg{width:15.5px; height:15.5px; flex:0 0 auto; margin-top:1px;}
 .alert-amber{background:var(--amber-100); color:#8A5E00; border:1px solid #F0D68A;}
 .alert-amber b{color:#7A5300;}
 .alert-red{background:var(--red-100); color:#8C1424;}.alert-red h3{font-family:var(--font-display); font-size:25.5px; margin-bottom:3.5px; color:#B01C31;}
@@ -144,6 +144,19 @@ a{color:inherit;}
 .timer-bar-fill{height:100%; background:var(--green-600); width:0%; transition:width .25s linear;}
 
 .point-list{display:flex; flex-direction:column; gap:7.5px;}
+.point-list-compact{gap:5px;}
+.point-list-compact .point-row{padding:6.5px 10px; gap:8px;}
+.point-list-compact .point-num{width:16px; height:16px; font-size:12px;}
+.point-list-compact .point-name{font-size:14.5px;}
+.point-list-compact .point-status{font-size:11px; padding:2px 7px;}
+.pill-tag{display:inline-flex; padding:2px 8px; border-radius:999px; font-size:11px; font-weight:700;}
+.pill-tag.tag-crackle{background:var(--red-100); color:var(--red-600);}
+.pill-tag.tag-wheeze{background:var(--amber-100); color:var(--amber-600);}
+.pill-tag.tag-normal{background:var(--green-100); color:var(--green-700);}
+.ausc-result-card{padding:12px;}
+.rr-inline-result{display:flex; align-items:center; justify-content:space-between; gap:12px; margin:2px 0 10px; padding:9px 10px; border-radius:12px; background:var(--green-050); border:1px solid var(--green-100);}
+.rr-inline-result span{font-size:12.5px; color:var(--ink-500); line-height:1.35;}
+.rr-inline-result b{font-size:15.5px; color:var(--green-800); white-space:nowrap;}
 .point-row{background:#fff; border:1px solid var(--border); border-radius:var(--radius-md); padding:10.5px 12px; display:flex; align-items:center; gap:10.5px;}
 .point-row.active{background:var(--green-800); border-color:var(--green-800);}
 .point-row.active .point-num{background:#fff; color:var(--green-800);}
@@ -249,11 +262,14 @@ a{color:inherit;}
   padding:6px 14px; cursor:pointer; white-space:nowrap;
   transition:background .15s ease, color .15s ease;
 }
-.view-toggle:hover{background:#007A7A; color:#fff;}.point-num{
-  position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
-  color:#fff; font-size:16px; font-weight:800; font-family:var(--font-body);
-  pointer-events:none; text-shadow:0 1px 2px rgba(0,0,0,.35);
+.view-toggle:hover{background:#007A7A; color:#fff;}
+.point-badge-num{
+  display:flex; align-items:center; justify-content:center;
+  width:100%; height:100%;
+  font-size:14px; font-weight:800; line-height:1; color:#fff;
+  pointer-events:none;
 }
+.point.done .point-badge-num{opacity:0;}
 .diagram-frame{
   position:relative;
 }
@@ -270,17 +286,19 @@ a{color:inherit;}
 }
 .point-layer{position:absolute; inset:0;}
 .point{
-  position:absolute; width:30px; height:30px; margin:-15px 0 0 -15px;
-  border-radius:50%; border:2px dashed rgba(0,122,122,.85); background:rgba(0,166,166,.16);
-  cursor:pointer; animation:point-pulse 1.8s infinite; transition:background .15s ease, border-color .15s ease, box-shadow .15s ease;
+  position:absolute; width:28px; height:28px; margin:-14px 0 0 -14px;
+  border-radius:50%; border:2px solid #fff; background:rgba(0,163,174,.72);
+  box-shadow:0 2px 6px rgba(0,0,0,.28);
+  cursor:pointer; transition:background .15s ease, box-shadow .15s ease, transform .15s ease;
   padding:0;
 }
-.point:hover{background:rgba(0,166,166,.32);}
-.point.dragover{background:rgba(0,166,166,.5); border-color:var(--green-800); border-style:solid;}
-.point.selected{border-color:#1C7FD6; border-style:solid; box-shadow:0 0 0 5px rgba(28,127,214,.22); animation:none;}
-.point.done{border-style:solid; border-color:var(--green-700); background:var(--green-700); animation:none;}
+.point:hover{background:rgba(0,163,174,.9);}
+.point.dragover{background:#007A82; transform:scale(1.15);}
+.point.selected{background:#1EC8D6; transform:scale(1.18); box-shadow:0 0 0 5px rgba(30,200,214,.35), 0 2px 6px rgba(0,0,0,.28); animation:point-pulse 1.4s infinite;}
+.point.docked,.point.selected.docked{background:#007A82; border-color:#fff; transform:scale(1.08); box-shadow:0 0 0 4px rgba(0,163,174,.28), 0 2px 6px rgba(0,0,0,.28); animation:none;}
+.point.done{border-style:solid; border-color:#fff; background:var(--green-700); box-shadow:0 2px 6px rgba(0,0,0,.28);}
 .point.done::after{content:'✓'; position:absolute; inset:0; display:flex; align-items:center; justify-content:center; color:#fff; font-size:14px; font-weight:800;}
-@keyframes point-pulse{0%,100%{box-shadow:0 0 0 0 rgba(0,166,166,.45);} 50%{box-shadow:0 0 0 8px rgba(0,166,166,0);}}
+@keyframes point-pulse{0%,100%{box-shadow:0 0 0 5px rgba(30,200,214,.35);} 50%{box-shadow:0 0 0 10px rgba(30,200,214,0);}}
 
 .device-port{
   position:absolute; left:93.7%; top:55.1%; width:8px; height:8px;
@@ -366,7 +384,7 @@ a{color:inherit;}
 
 .device-led{
   position:absolute;
-  left:90%; top:27%;
+  left:81%; top:20%;
   width:3.2%; height:3.2%; min-width:11px; min-height:11px; max-width:16px; max-height:16px;
   transform:translate(-50%,-50%);
   border-radius:50%;
@@ -422,15 +440,148 @@ a{color:inherit;}
 
 .dlcd-body{flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:0 3%; min-height:0;}
 .dlcd-diagram{width:100%; height:auto; display:block;}
-.dlcd-labels{display:grid; grid-template-columns:1fr 1fr; width:100%; margin-top:0;}
+.dlcd-labels{display:grid; grid-template-columns:1fr 1fr; width:100%; margin-top:-8px;}
 .dlcd-labels span{font-size:7px; font-weight:800; color:#151A18; text-align:center;}
 
 .dlcd-resultrow{
   flex:0 0 auto; display:flex; align-items:flex-end; justify-content:space-between;
   padding:1% 6% 3%; gap:6px;
 }
-.dlcd-result{display:flex; flex-direction:column; align-items:flex-start;}.dlcd-result b{font-size:11.5px; font-weight:800; letter-spacing:.01em; line-height:1.15;}.dlcd-result span{font-size:9px; color:#5B6460; margin-top:1px;}.dlcd-pointname{font-size:9.5px; font-weight:700; color:#3A423F; text-align:right; max-width:50%; line-height:1.25;}
+.dlcd-result{display:flex; flex-direction:column; align-items:flex-start;}.dlcd-result b{font-size:11.5px; font-weight:800; letter-spacing:.01em; line-height:1.15;}.dlcd-result span{font-size:9px; color:#5B6460; margin-top:1px;}.dlcd-pointname{font-size:11.5px; font-weight:700; color:#3A423F; text-align:right; max-width:50%; line-height:1.25;}
 
 .dlcd-gate{flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; padding:0 8%; gap:3px;}
 .dlcd-gate svg{width:20px; height:20px; color:#9AA39D; margin-bottom:2px;}.dlcd-gate b{font-size:19.5px; font-weight:800; color:#5B6460;}.dlcd-gate span{font-size:13px; color:#8a938e; line-height:1.5;}
+.history-time{font-size:12.5px; color:var(--ink-300); flex:0 0 auto; white-space:nowrap; margin-top:2px;}
 
+
+/* ===== Revisi UI 3 ===== */
+/* Riwayat: tanggal di kanan bawah, label risiko tetap satu baris */
+.history-item{position:relative; padding-bottom:39px; min-height:104px;}
+.history-item .content{min-width:0; padding-right:0;}
+.history-item h4{overflow-wrap:anywhere; line-height:1.2;}
+.history-item .content p{white-space:nowrap; font-size:15px; letter-spacing:-.01em; padding-right:0;}
+.history-time{position:absolute; right:12px; bottom:12px; margin:0; font-size:12.5px;}
+.history-item .pill{margin-top:7px;}
+
+/* Form pasien: date input setara besar dengan input lainnya */
+.field input[type=date]{
+  width:100%; border:1.5px solid var(--border); border-radius:var(--radius-sm);
+  padding:10.5px 12px; min-height:49px; font-size:19px; font-family:inherit;
+  color:var(--ink-900); background:var(--white); box-sizing:border-box;
+}
+.field input[type=date]::-webkit-calendar-picker-indicator{width:22px; height:22px; cursor:pointer; opacity:.85;}
+/* Hilangkan spinner angka */
+.field input[type=number]::-webkit-outer-spin-button,
+.field input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none; margin:0;}
+.field input[type=number]{-moz-appearance:textfield; appearance:textfield;}
+
+/* Kondisi Saat Ini: semua tanda berada dalam satu kartu putih besar */
+.danger-group-card{padding:15px 14px 16px;}
+.danger-section-title{font-family:var(--font-display); font-size:21px; font-weight:700; color:var(--ink-900); margin:0 0 10px;}
+.danger-divider{height:1px; background:var(--border); margin:16px 0 14px;}
+.danger-group-card .danger-item{
+  background:transparent; border:0; box-shadow:none; border-radius:0;
+  padding:11px 0 13px; margin:0; border-bottom:1px solid var(--border);
+}
+.danger-group-card .danger-item:first-child{padding-top:2px;}
+.danger-group-card .danger-item:last-child{border-bottom:0; padding-bottom:3px;}
+.danger-group-card .danger-item-top{margin-bottom:9px;}
+.danger-group-card .field{padding:5px 0 8px; margin-bottom:7px;}
+.danger-group-card .field:last-child{margin-bottom:0; padding-bottom:0;}
+
+
+/* ===== Revisi UI 4 ===== */
+/* Beranda — tanggal sejajar dengan badge tindakan, dan label risiko sedikit diperbesar. */
+.home-history-item{
+  padding-bottom:11px;
+  min-height:0;
+}
+.home-history-item .content{
+  min-width:0;
+  width:100%;
+}
+.home-history-item .home-risk-line{
+  white-space:nowrap;
+  font-size:14.6px;
+  letter-spacing:-.018em;
+  line-height:1.3;
+  padding-right:0;
+}
+.home-history-item .history-footer{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+  margin-top:6px;
+  width:100%;
+}
+.home-history-item .pill{
+  margin-top:0;
+}
+.home-history-item .history-time{
+  position:static;
+  right:auto;
+  bottom:auto;
+  margin:0;
+  flex:0 0 auto;
+  align-self:center;
+  line-height:1;
+}
+
+/* Halaman History — ID dan SpO2 tidak ditampilkan; label risiko dibuat lebih menonjol. */
+#riwayatList .history-item{
+  padding-bottom:14px;
+  min-height:0;
+}
+#riwayatList .history-risk-label{
+  margin-top:7px;
+  font-size:16.5px;
+  line-height:1.32;
+  font-weight:700;
+  color:var(--ink-700);
+  white-space:normal;
+}
+
+/* Kondisi Saat Ini — distres pernapasan berada di kartu putih terpisah. */
+.distress-card{
+  padding:15px 14px 16px;
+  margin-top:12px;
+}
+.distress-card .field{
+  padding:5px 0 8px;
+  margin-bottom:7px;
+}
+.distress-card .field:last-child{
+  margin-bottom:0;
+  padding-bottom:0;
+}
+
+/* Caption perangkat: tanpa ikon; subteks berada tepat di bawah judul.
+   Lebarnya disamakan dengan disclaimer (430px) dan dipusatkan di kolom perangkat,
+   supaya sisi kiri teks atas dan bawah sejajar. */
+.device-caption{
+  display:block;
+  width:430px;
+  align-self:center;
+  line-height:1.35;
+}
+.device-caption-copy{
+  display:flex;
+  flex-direction:column;
+  align-items:flex-start;
+  gap:4px;
+}
+.device-caption-copy b{
+  display:block;
+  color:#007A7A;
+  font-size:18.5px;
+  font-weight:700;
+}
+.device-caption-copy span{
+  display:block;
+  color:#007A7A;
+  font-size:18.5px;
+  font-weight:600;
+  line-height:1.5;
+  max-width:430px;
+}

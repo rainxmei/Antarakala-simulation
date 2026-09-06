@@ -24,17 +24,19 @@
       icon:'<circle cx="12" cy="12" r="9"/><path d="M9 10c.5 1 1.5 1 2 0M13 10c.5 1 1.5 1 2 0"/><path d="M9 15c1.5 1.5 4.5 1.5 6 0"/>' },
     { key:"kejang", title:"Kejang", desc:"Riwayat atau episode kejang aktif selama sakit saat ini.",
       icon:'<path d="M13 2L3 14h7l-1 8 10-12h-7l1-8z"/>' },
-    { key:"letargis", title:"Letargis atau Tidak Sadar", desc:"Penurunan kesadaran signifikan, tidak merespons rangsangan wajar.",
+    { key:"letargis", title:"Letargis", desc:"Penurunan kesadaran signifikan, tidak merespons rangsangan wajar.",
       icon:'<rect x="2" y="13" width="16" height="6" rx="1.5"/><path d="M2 13v-2a3 3 0 013-3h6a3 3 0 013 3M20 15v4M2 19v1M2 13V9"/>' },
     { key:"stridor", title:"Stridor pada Anak yang Tenang", desc:"Suara napas kasar saat inspirasi tanpa anak menangis.",
       icon:'<path d="M2 12c2-4 4-4 6 0s4 4 6 0 4-4 6 0" />' },
+    { key:"chest", title:"Chest Indrawing", desc:"Tarikan dinding dada bagian bawah ke dalam saat menarik napas.",
+      icon:'<path d="M12 2s7 7.58 7 12a7 7 0 11-14 0c0-4.42 7-12 7-12z"/>' },
   ];
 
   /* ---------------- state ---------------- */
   const state = {
-    patient:{ name:"", age:"", gender:"", pcv:"", chest:"" },
+    patient:{ name:"", age:null, gender:"", pcv:"" },
     danger:{},              // key -> 'ada' | 'tidak'
-    vitals:{ temp:36.8, spo2:97, flare:"", grunt:"" },
+    vitals:{ temp:36.8, spo2:97, flare:"tidak", grunt:"tidak" },
     points:[],              // {id,name,result:'crackle'|'wheeze'|'normal'}
     result:null,            // computed after AI step
     lastExamScreen:"beranda",
@@ -57,8 +59,8 @@
     // seed demo data so the screen isn't empty on first visit
     return [
       { name:"Asep Santoso", id:"RM-2024-0891", complaint:"Sesak napas", tier:"high", spo2:92, hr:110, when:"Hari ini, 09:45" },
-      { name:"Budi Darmawan", id:"RM-2024-0889", complaint:"Kejang", tier:"low", spo2:97, hr:82, when:"17 Juli 2026, 10:15" },
-      { name:"Tiara Andini", id:"RM-2024-0888", complaint:"Pemantauan lanjutan", tier:"mid", spo2:94, hr:95, when:"16 Juli 2026, 16:00" },
+      { name:"Budi Darmawan", id:"RM-2024-0889", complaint:"Kejang", tier:"low", spo2:97, hr:82, when:"4 Sep 2026, 16:20" },
+      { name:"Tiara Andini", id:"RM-2024-0888", complaint:"Pemantauan lanjutan", tier:"mid", spo2:94, hr:95, when:"3 Sep 2026, 11:05" },
     ];
   }
   function saveHistory(list){
@@ -103,14 +105,10 @@
   };
 
   const NAV_ITEMS = [
-    { key:"beranda", label:"Beranda", target:"beranda",
+    { key:"beranda", label:"Home", target:"beranda",
       icon:'<path d="M3 11l9-8 9 8"/><path d="M5 10v9a1 1 0 001 1h4v-6h4v6h4a1 1 0 001-1v-9"/>' },
-    { key:"pasien", label:"Pasien", target:"riwayat",
-      icon:'<circle cx="9" cy="8" r="3.2"/><path d="M3 20v-1.2A4.8 4.8 0 017.8 14h2.4A4.8 4.8 0 0115 18.8V20"/><circle cx="17" cy="8.5" r="2.4"/><path d="M20.5 20v-1a3.8 3.8 0 00-2.7-3.6"/>' },
-    { key:"pemeriksaan", label:"Pemeriksaan", target:"__exam__",
-      icon:'<rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8 7V5a2 2 0 012-2h4a2 2 0 012 2v2M9 13h6M12 10v6"/>' },
-    { key:"analisis", label:"Analisis", target:"__analysis__",
-      icon:'<path d="M4 20V10M11 20V4M18 20v-7"/>' },
+    { key:"pasien", label:"History", target:"riwayat",
+      icon:'<circle cx="12" cy="8" r="4"/><path d="M4 20c0-3.3 3.6-6 8-6s8 2.7 8 6"/>' },
   ];
 
   function renderBottomNav(){
@@ -139,7 +137,7 @@
 
   function afterNav(screenName){
     if(screenName==="beranda") renderBeranda();
-    if(screenName==="tanda-bahaya") renderDangerList();
+    if(screenName==="tanda-bahaya"){ renderDangerList(); syncDistressControls(); }
     if(screenName==="proses-auskultasi") syncAuscultationScreen();
     if(screenName==="input-parameter") prefillParameter();
     if(screenName==="hasil-skrining") renderHasil();
@@ -186,6 +184,7 @@
   function handleAction(action){
     if(action==="open-about") $("#aboutModal").classList.add("visible");
     if(action==="close-about") $("#aboutModal").classList.remove("visible");
+    if(action==="close-history-detail") $("#historyDetailModal").classList.remove("visible");
     if(action==="download-report") downloadReport();
     if(action==="save-finish") finishAndSave();
   }
@@ -204,12 +203,15 @@
   function historyItemHTML(h){
     const tierMap = { high:{cls:"high", pill:"pill-red", text:"Rujukan"}, mid:{cls:"", pill:"pill-amber", text:"Pemantauan"}, low:{cls:"", pill:"pill-green", text:"Selesai"} };
     const t = tierMap[h.tier] || tierMap.low;
-    return `<div class="history-item ${t.cls}">
+    return `<div class="history-item home-history-item ${t.cls}">
       <div class="num">${h.tier==="high" ? "!" : "✓"}</div>
       <div class="content">
         <h4>${h.name}</h4>
-        <p>${RISK_LABEL[h.tier] || RISK_LABEL.low}</p>
-        <span class="pill ${t.pill}">${t.text}</span>
+        <p class="home-risk-line">${RISK_LABEL[h.tier] || RISK_LABEL.low}</p>
+        <div class="history-footer">
+          <span class="pill ${t.pill}">${t.text}</span>
+          <span class="history-time">${h.when}</span>
+        </div>
       </div>
     </div>`;
   }
@@ -218,7 +220,6 @@
   function onSegChange(segId, val){
     if(segId==="pGender") state.patient.gender = val;
     if(segId==="pPCV") state.patient.pcv = val;
-    if(segId==="pChest") state.patient.chest = val;
     if(segId==="vFlare") state.vitals.flare = val;
     if(segId==="vGrunt") state.vitals.grunt = val;
     if(segId.startsWith("danger-")) state.danger[segId.replace("danger-","")] = val;
@@ -227,11 +228,43 @@
 
   function validatePatientForm(){
     const p = state.patient;
-    const ok = $("#pName").value.trim().length>1 && $("#pAge").value && p.gender && p.pcv && p.chest;
+    const ok = $("#pName").value.trim().length>1 && Number.isFinite(p.age) && p.gender && p.pcv;
     $("#btnToDanger").disabled = !ok;
   }
   $("#pName") && $("#pName").addEventListener("input", ()=>{ state.patient.name=$("#pName").value; validatePatientForm(); });
-  $("#pAge") && $("#pAge").addEventListener("input", ()=>{ state.patient.age=$("#pAge").value; validatePatientForm(); });
+
+  function clampAgeMonths(m){ return clamp(Math.round(m), 0, 59); }
+
+  function setAgeFromMonths(totalMonths){
+    totalMonths = clampAgeMonths(totalMonths);
+    state.patient.age = totalMonths;
+    $("#pAgeYear").value = Math.floor(totalMonths/12);
+    $("#pAgeMonth").value = totalMonths%12;
+    validatePatientForm();
+  }
+
+  $("#pBirthdate") && $("#pBirthdate").addEventListener("input", ()=>{
+    const val = $("#pBirthdate").value;
+    if(!val){ return; }
+    const birth = new Date(val);
+    const today = new Date();
+    let months = (today.getFullYear()-birth.getFullYear())*12 + (today.getMonth()-birth.getMonth());
+    if(today.getDate() < birth.getDate()) months -= 1;
+    if(months < 0 || isNaN(months)){ showToast("Tanggal lahir tidak valid untuk usia balita (0-59 bulan)"); return; }
+    if(months > 59){ showToast("Usia di atas 59 bulan berada di luar cakupan ANTARAKALA"); }
+    setAgeFromMonths(months);
+  });
+
+  function onManualAgeInput(){
+    const y = parseInt($("#pAgeYear").value, 10) || 0;
+    const m = parseInt($("#pAgeMonth").value, 10) || 0;
+    const totalMonths = clampAgeMonths(y*12 + m);
+    state.patient.age = totalMonths;
+    $("#pBirthdate").value = ""; // input manual meng-override tanggal lahir
+    validatePatientForm();
+  }
+  $("#pAgeYear") && $("#pAgeYear").addEventListener("input", onManualAgeInput);
+  $("#pAgeMonth") && $("#pAgeMonth").addEventListener("input", onManualAgeInput);
 
   $("#btnToDanger") && $("#btnToDanger").addEventListener("click", ()=>{
     if($("#btnToDanger").disabled) return;
@@ -239,17 +272,35 @@
   });
 
   /* ---------------- TANDA BAHAYA ---------------- */
+  function syncDistressControls(){
+    // Nasal flaring dan grunting selalu memiliki nilai awal "Tidak",
+    // sehingga tampilan dan state konsisten sejak halaman dibuka.
+    if(!state.vitals.flare) state.vitals.flare = "tidak";
+    if(!state.vitals.grunt) state.vitals.grunt = "tidak";
+
+    [["vFlare", state.vitals.flare], ["vGrunt", state.vitals.grunt]].forEach(([id,val])=>{
+      const seg = $("#"+id);
+      if(!seg) return;
+      $$("button", seg).forEach(btn=>{
+        const selected = btn.dataset.val === val;
+        btn.classList.toggle("selected", selected);
+        btn.classList.toggle("danger", selected && btn.dataset.danger === "1");
+      });
+    });
+  }
+
   function renderDangerList(){
     $("#dangerList").innerHTML = DANGER_SIGNS.map(d=>{
-      const val = state.danger[d.key] || "tidak";
+      if(!state.danger[d.key]) state.danger[d.key] = "tidak";
+      const val = state.danger[d.key];
       return `<div class="danger-item">
         <div class="danger-item-top">
           <div class="danger-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${d.icon}</svg></div>
           <div><h4>${d.title}</h4><p>${d.desc}</p></div>
         </div>
         <div class="seg seg-2" id="danger-${d.key}">
-          <button data-val="tidak" class="${val==="tidak"?"selected":""}">Tidak Ada</button>
-          <button data-val="ada" data-danger="1" class="${val==="ada"?"selected danger":""}">Ada</button>
+          <button data-val="tidak" class="${val==="tidak"?"selected":""}">Tidak</button>
+          <button data-val="ada" data-danger="1" class="${val==="ada"?"selected danger":""}">Ya</button>
         </div>
       </div>`;
     }).join("");
@@ -270,7 +321,7 @@
       } else if(i===activeIdx && mode==="badsignal"){
         statusHtml = `<span class="point-status tag-wheeze">⚠ Sinyal lemah</span>`;
       }
-      return `<div class="${cls}"><div class="point-num">${done?"✓":p.id}</div><div class="point-name">${p.id}. ${p.name}</div>${statusHtml}</div>`;
+      return `<div class="${cls}"><div class="point-num">${done?"✓":p.id}</div><div class="point-name">${p.name}</div>${statusHtml}</div>`;
     }).join("");
     updateLanjutButton();
   }
@@ -366,6 +417,13 @@
     updateLanjutButton();
   });
 
+  document.addEventListener("antarakala:probe-required", (e)=>{
+    if(!isScreenVisible("proses-auskultasi")) return;
+    const idx = Number(e.detail && e.detail.index);
+    const no = Number.isFinite(idx) ? idx + 1 : "aktif";
+    showToast(`Posisikan kepala stetoskop tepat di titik ${no} terlebih dahulu`);
+  });
+
   document.addEventListener("antarakala:reset", ()=>{
     if(isScreenVisible("proses-auskultasi")) syncAuscultationScreen();
   });
@@ -377,16 +435,8 @@
 
   /* ---------------- INPUT PARAMETER SKORING ---------------- */
   function prefillParameter(){
-    const idNum = "884-" + String(291 + history.length).padStart(3,"0");
-    $("#paramPatientLine").innerHTML = `Pasien: ${state.patient.name || "—"} (ID: ${idNum})<br>Pertemuan: #${13 + history.length}`;
-    checkSpo2Warning();
+    // tidak ada lagi yang perlu di-prefill (baris pasien & peringatan SpO2 sudah dihapus)
   }
-  function checkSpo2Warning(){
-    const v = parseFloat($("#vSpo2").value);
-    $("#spo2Warning").style.display = (v && v < 93) ? "flex" : "none";
-    $("#vSpo2").closest(".unit-input").style.borderRadius="10px";
-  }
-  $("#vSpo2") && $("#vSpo2").addEventListener("input", checkSpo2Warning);
 
   $("#btnToProses") && $("#btnToProses").addEventListener("click", ()=>{
     state.vitals.temp = parseFloat($("#vTemp").value) || 36.8;
@@ -422,7 +472,7 @@
   function computeResult(){
     const p = state.patient, v = state.vitals;
     const dangerAda = Object.values(state.danger).some(x=>x==="ada");
-    const chestAda = p.chest === "ada";
+    const chestAda = state.danger.chest === "ada";
 
     const crackleCount = state.points.filter(pt=>pt && pt.result==="crackle").length;
     const wheezeCount  = state.points.filter(pt=>pt && pt.result==="wheeze").length;
@@ -431,8 +481,9 @@
     // true bila minimal satu dari enam titik terdeteksi crackle.
     const cracklePresent = crackleCount >= 1;
 
-    // Estimasi RR belum berasal dari pipeline audio asli, sehingga sementara tetap disimulasikan.
-    const ageM = parseFloat(p.age || "18");
+    // Estimasi laju napas pada purwarupa masih berasal dari simulasi pipeline setelah auskultasi.
+    // Nilainya ditampilkan sebagai hasil, bukan lagi input manual.
+    const ageM = Number.isFinite(p.age) ? p.age : 18;
     const rrThreshold = ageM < 2 ? 60 : (ageM < 12 ? 50 : 40);
     const rrBias = crackleCount>=2 ? 14 : (crackleCount===1 ? 6 : -4);
     const rrValue = Math.round(rrThreshold + rrBias + rand(-6,10));
@@ -530,32 +581,23 @@
     $("#resultTitle").textContent = RESULT_TEXT[r.tier].label;
     $("#resultAction").textContent = RESULT_TEXT[r.tier].action;
 
-    const colorMap = { crackle:"#D9364A", wheeze:"#C98A00", normal:"#00A3AE" };
+    const tagMap = { crackle:"tag-crackle", wheeze:"tag-wheeze", normal:"tag-normal" };
     const labelMap = { crackle:"Crackle", wheeze:"Wheeze", normal:"Normal" };
 
-    state.points.forEach((pt,i)=>{
-      if(!pt) return;
-      const dot = $(`#dotPt${i+1}`);
-      if(dot) dot.setAttribute("fill", colorMap[pt.result]);
-    });
+    $("#pointResultList").innerHTML = state.points.map((pt,i)=>{
+      const p = POINTS[i];
+      if(!pt) return `<div class="point-row"><div class="point-num">${p.id}</div><div class="point-name">${p.name}</div></div>`;
+      return `<div class="point-row done"><div class="point-num">${p.id}</div><div class="point-name">${p.name}</div><span class="point-status pill-tag ${tagMap[pt.result]}">${labelMap[pt.result]}</span></div>`;
+    }).join("");
 
-    $("#pointResultList").innerHTML = state.points.filter(Boolean).map((pt,i)=>`
-      <div class="point-result">
-        <div class="left">
-          <div class="circ" style="background:${colorMap[pt.result]}">${i+1}</div>
-          <b>${pt.name}</b>
-        </div>
-        <span class="tag-${pt.result}">${labelMap[pt.result]}</span>
-      </div>`).join("");
+    const rrEl = $("#rrResultValue");
+    if(rrEl) rrEl.textContent = `${r.rrValue} x/menit`;
   }
 
   /* ---------------- PENJELASAN AI ---------------- */
   function renderPenjelasan(){
     const r = state.result;
     if(!r) return;
-    const box = $("#aiConclusionBox");
-    box.className = "alert " + (r.tier==="high"?"alert-red":r.tier==="mid"?"alert-amber":"alert-green");
-    $("#aiConclusionTitle").textContent = "Kesimpulan";
     const positiveFactors = r.factors.filter(f=>f.positive);
     const top = (positiveFactors.length ? positiveFactors : r.factors).slice(0,3)
       .map(f=>f.label.replace(/\s*\(.*?\)/,"").toLowerCase());
@@ -567,7 +609,6 @@
     } else {
       $("#aiConclusionText").textContent = `Pasien dinilai ${RESULT_TEXT[r.tier].label}. TreeSHAP menunjukkan faktor yang paling mendorong kelas hasil adalah ${top.join(", ")}. Kondisi ini menunjukkan ${implication}`;
     }
-
   }
 
   function drawSpectrogram(tier, crackleCount){
@@ -638,8 +679,8 @@
     $("#vgFlare").className = "val " + (v.flare==="ada"?"val-danger":"val-ok");
     $("#vgTemp").textContent = v.temp.toFixed(1) + " °C";
     $("#vgTemp").className = "val " + (v.temp>=38?"val-danger":"val-ok");
-    $("#vgChest").textContent = p.chest==="ada" ? "Ada" : "Tidak";
-    $("#vgChest").className = "val " + (p.chest==="ada"?"val-danger":"val-ok");
+    $("#vgChest").textContent = state.danger.chest==="ada" ? "Ada" : "Tidak";
+    $("#vgChest").className = "val " + (state.danger.chest==="ada"?"val-danger":"val-ok");
     $("#vgGrunt").textContent = v.grunt==="ada" ? "Ada" : "Tidak";
     $("#vgGrunt").className = "val " + (v.grunt==="ada"?"val-danger":"val-ok");
   }
@@ -655,15 +696,23 @@
       tier: r.tier,
       spo2: state.vitals.spo2,
       hr: Math.round(rand(85,118)),
-      when: "Hari ini, " + nowHHMM(),
+      when: fullDateTime(),
+      // snapshot lengkap supaya bisa ditampilkan penuh saat item ini diklik di History
+      snapshot: {
+        patient: { name:p.name, age:p.age, gender:p.gender, pcv:p.pcv },
+        danger: { ...state.danger },
+        vitals: { ...state.vitals },
+        points: state.points.map(pt=>pt ? {...pt} : null),
+        result: { tier:r.tier, confidence:r.confidence, rrValue:r.rrValue, rrThreshold:r.rrThreshold, override:r.override, overrideReasons:[...r.overrideReasons] },
+      },
     };
     history.unshift(entry);
     saveHistory(history);
     showToast("Hasil pemeriksaan tersimpan ke riwayat");
     // reset for next exam
-    state.patient = { name:"", age:"", gender:"", pcv:"", chest:"" };
+    state.patient = { name:"", age:null, gender:"", pcv:"" };
     state.danger = {};
-    state.vitals = { temp:36.8, spo2:97, flare:"", grunt:"" };
+    state.vitals = { temp:36.8, spo2:97, flare:"tidak", grunt:"tidak" };
     state.points = new Array(6).fill(null);
     state.result = null;
     resetPatientForm();
@@ -672,20 +721,26 @@
 
   function resetPatientForm(){
     if($("#pName")) $("#pName").value = "";
-    if($("#pAge")) $("#pAge").value = "";
+    if($("#pBirthdate")) $("#pBirthdate").value = "";
+    if($("#pAgeYear")) $("#pAgeYear").value = "";
+    if($("#pAgeMonth")) $("#pAgeMonth").value = "";
+    state.patient.age = null;
     $$(".seg button").forEach(b=>b.classList.remove("selected","danger"));
+    syncDistressControls();
     if($("#vTemp")) $("#vTemp").value = "";
     if($("#vSpo2")) $("#vSpo2").value = "";
     validatePatientForm();
   }
 
   /* ---------------- RIWAYAT ---------------- */
+  let riwayatCurrentList = history;
   function renderRiwayat(list){
     const data = list || history;
+    riwayatCurrentList = data;
     const tierMap = { high:{pill:"pill-red", label:"Rujukan"}, mid:{pill:"pill-amber", label:"Pemantauan"}, low:{pill:"pill-green", label:"Selesai"} };
-    $("#riwayatList").innerHTML = data.map(h=>{
+    $("#riwayatList").innerHTML = data.map((h,i)=>{
       const t = tierMap[h.tier];
-      return `<div class="history-item ${h.tier==='high'?'high':''}" style="border-left-color:${h.tier==='high'?'var(--red-600)':h.tier==='mid'?'var(--amber-600)':'var(--green-500)'}">
+      return `<div class="history-item ${h.tier==='high'?'high':''}" data-histidx="${i}" style="border-left-color:${h.tier==='high'?'var(--red-600)':h.tier==='mid'?'var(--amber-600)':'var(--green-500)'}; cursor:pointer;">
         <div class="num" style="background:${h.tier==='high'?'var(--red-600)':h.tier==='mid'?'var(--amber-600)':'var(--green-700)'}">${h.tier==="high"?"!":"✓"}</div>
         <div class="content" style="width:100%;">
           <div style="display:flex; justify-content:space-between; align-items:flex-start;">
@@ -693,11 +748,7 @@
             <span style="font-size:11px; color:var(--ink-300);">${h.when}</span>
           </div>
           <h4 style="margin-top:6px;">${h.name}</h4>
-          <p>ID: ${h.id}</p>
-          <p style="margin-top:4px; font-weight:700; color:var(--ink-700);">${RISK_LABEL[h.tier] || RISK_LABEL.low}</p>
-          <p style="margin-top:6px; display:flex; gap:14px;">
-            <span>≋ SpO2: ${h.spo2}%</span>
-          </p>
+          <p class="history-risk-label">${RISK_LABEL[h.tier] || RISK_LABEL.low}</p>
         </div>
       </div>`;
     }).join("") || `<p style="font-size:12.5px;color:var(--ink-300);">Tidak ada data ditemukan.</p>`;
@@ -705,6 +756,72 @@
   $("#searchRiwayat") && $("#searchRiwayat").addEventListener("input",(e)=>{
     const q = e.target.value.toLowerCase();
     renderRiwayat(history.filter(h=> h.name.toLowerCase().includes(q) || h.id.toLowerCase().includes(q)));
+  });
+
+  const GENDER_LABEL = { L:"Laki-laki", P:"Perempuan" };
+  const PCV_LABEL = { sudah:"Sudah", belum:"Belum", tidaktahu:"Tidak Tahu" };
+  const RESULT_TAG_LABEL = { crackle:"Crackle", wheeze:"Wheeze", normal:"Normal" };
+
+  function openHistoryDetail(idx){
+    const h = riwayatCurrentList[idx];
+    if(!h) return;
+    const s = h.snapshot;
+    const tierLabel = RESULT_TEXT[h.tier] ? RESULT_TEXT[h.tier].label : (RISK_LABEL[h.tier]||"—");
+
+    let body = `
+      <div class="card" style="margin-bottom:10px;">
+        <div class="card-title" style="margin-bottom:6px;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-3.3 3.6-6 8-6s8 2.7 8 6"/></svg>
+          Identitas Pasien
+        </div>
+        <p style="font-size:13px; margin-bottom:3px;"><b>${h.name}</b> &nbsp;(${h.id})</p>
+        <p style="font-size:12.5px; color:var(--ink-500);">Diperiksa: ${h.when}</p>`;
+    if(s && s.patient){
+      body += `<p style="font-size:12.5px; color:var(--ink-500); margin-top:4px;">
+        Usia: ${Number.isFinite(s.patient.age) ? s.patient.age+" bulan" : "—"} ·
+        Jenis Kelamin: ${GENDER_LABEL[s.patient.gender]||"—"} ·
+        Imunisasi PCV: ${PCV_LABEL[s.patient.pcv]||"—"}</p>`;
+    }
+    body += `</div>`;
+
+    body += `<div class="card" style="margin-bottom:10px;">
+      <div class="card-title" style="margin-bottom:6px;">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M9 12l2 2 4-4"/></svg>
+        Hasil Skrining
+      </div>
+      <p style="font-size:13px; font-weight:700; color:var(--ink-800); margin-bottom:4px;">${tierLabel}</p>`;
+    if(s && s.result){
+      body += `<p style="font-size:12.5px; color:var(--ink-500);">Kepercayaan AI: ${s.result.confidence.toFixed(1)}% · Laju Napas: ${s.result.rrValue}/menit (ambang usia: ${s.result.rrThreshold}/menit)</p>`;
+      if(s.result.override){
+        body += `<p style="font-size:12px; color:var(--red-600); margin-top:4px;">Override klinis: ${s.result.overrideReasons.join(", ")}</p>`;
+      }
+    }
+    body += `<p style="font-size:12.5px; color:var(--ink-500); margin-top:4px;">SpO2: ${h.spo2}%${s&&s.vitals ? " · Suhu: "+s.vitals.temp.toFixed(1)+"°C" : ""}</p>
+    </div>`;
+
+    if(s && s.points && s.points.some(Boolean)){
+      body += `<div class="card">
+        <div class="card-title" style="margin-bottom:6px;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 2a4 4 0 00-4 4v5a4 4 0 008 0V6a4 4 0 00-4-4z"/><path d="M6 11a6 6 0 0012 0M12 17v4"/></svg>
+          Hasil Auskultasi 6 Titik
+        </div>
+        <div class="point-list point-list-compact">`;
+      s.points.forEach((pt,i)=>{
+        const p = POINTS[i];
+        if(!pt){ body += `<div class="point-row"><div class="point-num">${p.id}</div><div class="point-name">${p.name}</div></div>`; return; }
+        body += `<div class="point-row done"><div class="point-num">${p.id}</div><div class="point-name">${p.name}</div><span class="point-status pill-tag tag-${pt.result}">${RESULT_TAG_LABEL[pt.result]}</span></div>`;
+      });
+      body += `</div></div>`;
+    } else if(!s){
+      body += `<p style="font-size:12px; color:var(--ink-300); font-style:italic;">Data contoh demo — rincian lengkap hanya tersedia untuk pemeriksaan yang disimpan dari sesi ini.</p>`;
+    }
+
+    $("#historyDetailBody").innerHTML = body;
+    $("#historyDetailModal").classList.add("visible");
+  }
+  document.addEventListener("click",(e)=>{
+    const item = e.target.closest(".history-item[data-histidx]");
+    if(item) openHistoryDetail(parseInt(item.dataset.histidx,10));
   });
 
   /* ---------------- REPORT DOWNLOAD ---------------- */
@@ -762,6 +879,11 @@
     return String(d.getHours()).padStart(2,"0")+":"+String(d.getMinutes()).padStart(2,"0");
   }
   function tickClock(){ const el = $("#clock"); if(el) el.textContent = nowHHMM(); }
+  function fullDateTime(){
+    const d = new Date();
+    const tgl = d.toLocaleDateString("id-ID", { day:"numeric", month:"short", year:"numeric" });
+    return `${tgl}, ${nowHHMM()}`;
+  }
 
   /* ---------------- init ---------------- */
   function init(){
