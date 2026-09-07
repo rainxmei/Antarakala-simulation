@@ -626,7 +626,7 @@
           </div>
 
           <div class="device-disclaimer">
-            Purwarupa ini telah mengintegrasikan inferensi Model B LightGBM dan perhitungan TreeSHAP secara lokal di browser. Sampel auskultasi memakai rekaman ICBHI nyata; hasil kelas akustik dan Grad-CAM dibuat dari rekonstruksi checkpoint CNN, sementara laju napas dihitung dari anotasi respiratory-cycle. Hasil purwarupa merupakan alat bantu skrining dan bukan diagnosis medis.
+            Model A CNN telah diimplementasikan untuk mengklasifikasikan suara paru. Pada purwarupa digital, akuisisi audio langsung dari mikrofon belum terintegrasi sehingga audio yang digunakan untuk demonstrasi masih disimulasikan. Audio tersebut tetap diproses oleh Model A, dan hasil klasifikasinya diteruskan sebagai input ke Model B LightGBM. Model B telah diimplementasikan untuk menghasilkan stratifikasi risiko. Untuk meningkatkan transparansi hasil, Grad-CAM diterapkan untuk menjelaskan prediksi Model A, sedangkan TreeSHAP digunakan untuk menjelaskan kontribusi parameter pada hasil Model B.
           </div>
         </div>
 
@@ -662,7 +662,7 @@
           </div>
 
           <div class="diagram-note">
-            *Ilustrasi anak dibuat dengan bantuan AI generatif. Pakai tombol "Lihat Belakang/Depan" di atas untuk berpindah tampilan.
+            Ilustrasi anak dibuat dengan bantuan AI generatif. Pakai tombol "Lihat Belakang/Depan" di atas untuk berpindah tampilan.
           </div>
         </div>
 
