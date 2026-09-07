@@ -2,8 +2,8 @@
    ANTARAKALA — Physical Device Simulation
    Satu halaman LCD (sesuai referensi), 3 tombol (kiri/pilih/kanan).
    Device adalah "sumber kebenaran": saat merekam titik di device,
-   perangkat mengirim event yang didengarkan oleh simulasi HP (app.js)
-   agar progres & hasil selalu identik.
+   perangkat memutar sampel suara paru ICBHI nyata yang sudah diproses
+   oleh rekonstruksi CNN, lalu mengirim hasil + RR + Grad-CAM ke app.js.
    ========================================================= */
 (function(){
   "use strict";
@@ -26,6 +26,9 @@
     recTimer: null,
     phoneReady: false, // true only when phone/HP is on the "proses-auskultasi" screen
     probeDockedPoint: null, // indeks titik yang benar-benar ditempeli kepala stetoskop
+    activeSample: null,
+    usedSampleIds: [],
+    audioEl: null,
   };
 
   const $ = (sel) => document.querySelector(sel);
@@ -35,11 +38,37 @@
     document.dispatchEvent(new CustomEvent(name, { detail: detail || {} }));
   }
 
-  function weightedResult(){
-    const r = Math.random();
-    if(r < 0.40) return "crackle";
-    if(r < 0.56) return "wheeze";
-    return "normal";
+  function sampleCatalog(){
+    return Array.isArray(window.ANTARAKALA_LUNG_SAMPLES) ? window.ANTARAKALA_LUNG_SAMPLES : [];
+  }
+
+  function pickRecordingSample(){
+    const catalog = sampleCatalog();
+    if(!catalog.length) return null;
+    let available = catalog.filter(x=>!D.usedSampleIds.includes(x.id));
+    if(!available.length){ D.usedSampleIds = []; available = catalog.slice(); }
+    const sample = available[Math.floor(Math.random()*available.length)];
+    D.usedSampleIds.push(sample.id);
+    return sample;
+  }
+
+  function stopSampleAudio(){
+    if(!D.audioEl) return;
+    try{ D.audioEl.pause(); D.audioEl.currentTime = 0; }catch(e){}
+    D.audioEl = null;
+  }
+
+  function playSampleAudio(sample){
+    stopSampleAudio();
+    if(!sample || !sample.audio) return;
+    try{
+      const audio = new Audio(sample.audio);
+      audio.loop = true;
+      audio.volume = 0.9;
+      D.audioEl = audio;
+      const promise = audio.play();
+      if(promise && typeof promise.catch === "function") promise.catch(()=>{});
+    }catch(e){}
   }
 
   /* ---------- body diagram SVG ---------- */
@@ -135,11 +164,16 @@
     } else {
       const probeReady = D.probeDockedPoint === D.cursor;
       resultHTML = probeReady
-        ? `<b style="color:#00A3AE; font-size:8px;">POSISI TEPAT</b><span>Tekan PILIH untuk mulai</span>`
+        ? `<b style="color:#3A423F; font-size:8px;">SIAP MEREKAM</b><span>Tekan PILIH untuk mulai</span>`
         : `<b style="color:#3A423F; font-size:8px;">SIAP MEREKAM</b><span>Tempelkan stetoskop ke titik yang dipilih</span>`;
     }
 
-    const pointLabel = allDone ? "6/6 TITIK TEREKAM" : POINT_NAMES[D.cursor].toUpperCase();
+    const pointLabel = allDone
+      ? `<span>6/6 TITIK</span><span>TEREKAM</span>`
+      : (()=>{
+          const parts = POINT_NAMES[D.cursor].toUpperCase().split(" ");
+          return `<span>${parts[0]}</span><span>${parts.slice(1).join(" ")}</span>`;
+        })();
 
     el.innerHTML = `
       <div class="dlcd-header"><b>${headerLabel}</b>${battWifi()}</div>
@@ -189,7 +223,6 @@
     if(D.state === "idle"){
       if(D.probeDockedPoint !== D.cursor){
         flashDenied();
-        emit("antarakala:probe-required", { index:D.cursor, name:POINT_NAMES[D.cursor] });
         return;
       }
       startRecording();
@@ -205,10 +238,12 @@
   }
 
   function startRecording(){
+    if(!D.activeSample) D.activeSample = pickRecordingSample();
     D.state = "recording";
     D.recElapsed = 0;
+    playSampleAudio(D.activeSample);
     render();
-    emit("antarakala:point-start", { index: D.cursor, name: POINT_NAMES[D.cursor], duration: REC_SECONDS });
+    emit("antarakala:point-start", { index: D.cursor, name: POINT_NAMES[D.cursor], duration: REC_SECONDS, sampleId:D.activeSample && D.activeSample.id });
 
     clearInterval(D.recTimer);
     D.recTimer = setInterval(()=>{
@@ -223,6 +258,7 @@
   }
 
   function finishRecording(){
+    stopSampleAudio();
     const badSignal = Math.random() < BAD_SIGNAL_CHANCE;
     if(badSignal){
       D.state = "badsignal";
@@ -232,13 +268,20 @@
       return;
     }
 
-    const result = weightedResult();
-    const confidence = Math.round(85 + Math.random()*14);
-    D.results[D.cursor] = { result, confidence };
+    const sample = D.activeSample || pickRecordingSample();
+    const result = sample ? sample.label : "normal";
+    const confidence = sample && Number.isFinite(Number(sample.confidence)) ? Math.round(Number(sample.confidence)) : 50;
+    const sampleMeta = sample ? {
+      sampleId:sample.id, rr:Number(sample.rr), gradcam:sample.gradcam, audio:sample.audio,
+      sourceRecording:sample.source_recording, annotationCycle:sample.annotation_cycle,
+      probabilities:sample.probabilities || null
+    } : {};
+    D.results[D.cursor] = { result, confidence, ...sampleMeta };
     D.done[D.cursor] = true;
     D.state = "complete";
     render();
-    emit("antarakala:point-result", { index: D.cursor, name: POINT_NAMES[D.cursor], result, confidence });
+    emit("antarakala:point-result", { index: D.cursor, name: POINT_NAMES[D.cursor], result, confidence, ...sampleMeta });
+    D.activeSample = null;
 
     setTimeout(()=>{
       const next = D.done.findIndex(v=>!v);
@@ -475,6 +518,23 @@
         pointNames: POINT_NAMES.slice(),
       };
     },
+    resetExam(){
+      clearInterval(D.recTimer);
+      D.recTimer = null;
+      stopSampleAudio();
+      D.state = "idle";
+      D.cursor = 0;
+      D.done = [false,false,false,false,false,false];
+      D.results = [null,null,null,null,null,null];
+      D.recElapsed = 0;
+      D.probeDockedPoint = null;
+      D.activeSample = null;
+      D.usedSampleIds = [];
+      autoSwitchViewForCursor();
+      render();
+      requestAnimationFrame(()=>resetProbePosition(false));
+      emit("antarakala:reset", {});
+    },
     onViewSwitched(){
       // Pergantian sisi tubuh membatalkan docking agar titik berikutnya harus diposisikan ulang.
       D.probeDockedPoint = null;
@@ -511,6 +571,7 @@
     const ready = e.detail.screen === "proses-auskultasi";
     if(ready !== D.phoneReady){
       D.phoneReady = ready;
+      if(!ready && D.state !== "recording") stopSampleAudio();
       if(ready){
         // Saat layar auskultasi dibuka, tampilkan sisi tubuh sesuai titik aktif.
         autoSwitchViewForCursor();

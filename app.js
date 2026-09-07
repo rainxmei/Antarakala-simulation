@@ -1,8 +1,9 @@
 /* =========================================================
    ANTARAKALA — Demo App Logic
    Model B (LightGBM) menjalankan model hasil training secara nyata
-   di browser. Output akustik/CNN dan estimasi RR pada purwarupa ini
-   masih disimulasikan untuk keperluan demonstrasi.
+   di browser. Output akustik memakai sampel ICBHI nyata yang telah
+   diinferensikan dengan rekonstruksi checkpoint CNN; RR dihitung dari
+   anotasi respiratory-cycle dan Grad-CAM berasal dari CNN yang sama.
    ========================================================= */
 (function(){
   "use strict";
@@ -44,9 +45,9 @@
   };
 
   const RESULT_TEXT = {
-    high:{ label:"RISIKO TINGGI", action:"Rujuk segera ke RS/IGD, berikan oksigen, siapkan IV & cairan resusitasi." },
-    mid: { label:"RISIKO SEDANG", action:"Berikan antibiotik oral sesuai pedoman IMCI, observasi kondisi selama 24 jam, dan edukasi tanda bahaya untuk kembali segera." },
-    low: { label:"RISIKO RENDAH", action:"Rawat jalan di rumah, edukasi orang tua mengenai tanda bahaya, dan jadwalkan kontrol ulang." },
+    high:{ label:"RISIKO TINGGI - PNEUMONIA BERAT", action:"Rujuk segera ke RS/IGD, berikan oksigen, siapkan IV & cairan resusitasi." },
+    mid: { label:"RISIKO SEDANG - PNEUMONIA", action:"Berikan antibiotik oral sesuai pedoman IMCI, observasi kondisi selama 24 jam, dan edukasi tanda bahaya untuk kembali segera." },
+    low: { label:"RISIKO RENDAH - BUKAN PNEUMONIA", action:"Rawat jalan di rumah, edukasi orang tua mengenai tanda bahaya, dan jadwalkan kontrol ulang." },
   };
 
   /* ---------------- history (localStorage) ---------------- */
@@ -74,6 +75,12 @@
   const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
   function rand(min,max){ return Math.random()*(max-min)+min; }
   function pick(arr){ return arr[Math.floor(Math.random()*arr.length)]; }
+  function median(values){
+    const a = values.filter(Number.isFinite).slice().sort((x,y)=>x-y);
+    if(!a.length) return NaN;
+    const m = Math.floor(a.length/2);
+    return a.length%2 ? a[m] : (a[m-1]+a[m])/2;
+  }
 
   function isScreenVisible(name){
     const el = $(`.screen[data-screen="${name}"]`);
@@ -94,6 +101,7 @@
     "input-pasien":"pasien",
     "tanda-bahaya":"pasien",
     "riwayat":"pasien",
+    "detail-riwayat":"pasien",
     "panduan-auskultasi":"pemeriksaan",
     "proses-auskultasi":"pemeriksaan",
     "input-parameter":"pemeriksaan",
@@ -187,6 +195,8 @@
     if(action==="close-history-detail") $("#historyDetailModal").classList.remove("visible");
     if(action==="download-report") downloadReport();
     if(action==="save-finish") finishAndSave();
+    if(action==="export-csv") downloadHistoryCSV();
+    if(action==="export-patient") downloadCurrentPatientReport();
   }
 
   /* ---------------- BERANDA ---------------- */
@@ -226,41 +236,62 @@
     validatePatientForm();
   }
 
+  function updateAgeScopeNote(totalMonths){
+    const note = $("#ageScopeNote");
+    if(!note) return;
+    const invalid = !Number.isFinite(totalMonths) || totalMonths < 0 || totalMonths > 59;
+    note.hidden = !invalid;
+    note.textContent = "ANTARAKALA ditujukan untuk anak usia 0–59 bulan (maksimal 4 tahun 11 bulan).";
+  }
+
   function validatePatientForm(){
     const p = state.patient;
-    const ok = $("#pName").value.trim().length>1 && Number.isFinite(p.age) && p.gender && p.pcv;
+    const ageValid = Number.isFinite(p.age) && p.age >= 0 && p.age <= 59;
+    const ok = $("#pName").value.trim().length>1 && ageValid && p.gender && p.pcv;
     $("#btnToDanger").disabled = !ok;
   }
   $("#pName") && $("#pName").addEventListener("input", ()=>{ state.patient.name=$("#pName").value; validatePatientForm(); });
 
-  function clampAgeMonths(m){ return clamp(Math.round(m), 0, 59); }
-
   function setAgeFromMonths(totalMonths){
-    totalMonths = clampAgeMonths(totalMonths);
+    totalMonths = Math.round(totalMonths);
     state.patient.age = totalMonths;
-    $("#pAgeYear").value = Math.floor(totalMonths/12);
-    $("#pAgeMonth").value = totalMonths%12;
+    $("#pAgeYear").value = totalMonths >= 0 ? Math.floor(totalMonths/12) : "";
+    $("#pAgeMonth").value = totalMonths >= 0 ? ((totalMonths%12)+12)%12 : "";
+    updateAgeScopeNote(totalMonths);
     validatePatientForm();
   }
 
   $("#pBirthdate") && $("#pBirthdate").addEventListener("input", ()=>{
     const val = $("#pBirthdate").value;
-    if(!val){ return; }
+    if(!val){ state.patient.age = null; updateAgeScopeNote(null); validatePatientForm(); return; }
     const birth = new Date(val);
     const today = new Date();
     let months = (today.getFullYear()-birth.getFullYear())*12 + (today.getMonth()-birth.getMonth());
     if(today.getDate() < birth.getDate()) months -= 1;
-    if(months < 0 || isNaN(months)){ showToast("Tanggal lahir tidak valid untuk usia balita (0-59 bulan)"); return; }
-    if(months > 59){ showToast("Usia di atas 59 bulan berada di luar cakupan ANTARAKALA"); }
+    if(months < 0 || isNaN(months)){
+      state.patient.age = null;
+      updateAgeScopeNote(-1);
+      validatePatientForm();
+      return;
+    }
     setAgeFromMonths(months);
   });
 
   function onManualAgeInput(){
-    const y = parseInt($("#pAgeYear").value, 10) || 0;
-    const m = parseInt($("#pAgeMonth").value, 10) || 0;
-    const totalMonths = clampAgeMonths(y*12 + m);
+    const yRaw = $("#pAgeYear").value.trim();
+    const mRaw = $("#pAgeMonth").value.trim();
+    const y = parseInt(yRaw, 10);
+    const m = parseInt(mRaw, 10);
+    if(!yRaw && !mRaw){
+      state.patient.age = null;
+      updateAgeScopeNote(null);
+      validatePatientForm();
+      return;
+    }
+    const totalMonths = (Number.isFinite(y) ? y : 0) * 12 + (Number.isFinite(m) ? m : 0);
     state.patient.age = totalMonths;
     $("#pBirthdate").value = ""; // input manual meng-override tanggal lahir
+    updateAgeScopeNote(totalMonths);
     validatePatientForm();
   }
   $("#pAgeYear") && $("#pAgeYear").addEventListener("input", onManualAgeInput);
@@ -295,7 +326,6 @@
       const val = state.danger[d.key];
       return `<div class="danger-item">
         <div class="danger-item-top">
-          <div class="danger-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${d.icon}</svg></div>
           <div><h4>${d.title}</h4><p>${d.desc}</p></div>
         </div>
         <div class="seg seg-2" id="danger-${d.key}">
@@ -349,7 +379,7 @@
     state.points = new Array(6).fill(null);
     const snap = window.AntarakalaDevice ? window.AntarakalaDevice.getSnapshot() : null;
     if(snap){
-      snap.results.forEach((r,i)=>{ if(r) state.points[i] = { id:i+1, name:snap.pointNames[i], result:r.result }; });
+      snap.results.forEach((r,i)=>{ if(r) state.points[i] = { id:i+1, name:snap.pointNames[i], ...r }; });
       if(snap.state === "recording"){
         $("#activePointLabel").textContent = `Titik Aktif: ${snap.cursor+1}. ${snap.pointNames[snap.cursor]}`;
         renderPointList(snap.cursor, "recording");
@@ -397,8 +427,8 @@
   });
 
   document.addEventListener("antarakala:point-result", (e)=>{
-    const { index, name, result } = e.detail;
-    state.points[index] = { id:index+1, name, result };
+    const { index, name, result, confidence, rr, gradcam, audio, sampleId, sourceRecording, annotationCycle, probabilities } = e.detail;
+    state.points[index] = { id:index+1, name, result, confidence, rr, gradcam, audio, sampleId, sourceRecording, annotationCycle, probabilities };
     if(isScreenVisible("proses-auskultasi")){
       renderPointList(index, "waiting");
       setTimerDisplay(0, "00:00 / 00:15");
@@ -412,17 +442,10 @@
   document.addEventListener("antarakala:all-done", ()=>{
     if(isScreenVisible("proses-auskultasi")){
       $("#activePointLabel").textContent = "✓ 6 Titik Selesai Direkam";
-      showToast("Auskultasi 6 titik selesai, silakan lanjutkan");
     }
     updateLanjutButton();
   });
 
-  document.addEventListener("antarakala:probe-required", (e)=>{
-    if(!isScreenVisible("proses-auskultasi")) return;
-    const idx = Number(e.detail && e.detail.index);
-    const no = Number.isFinite(idx) ? idx + 1 : "aktif";
-    showToast(`Posisikan kepala stetoskop tepat di titik ${no} terlebih dahulu`);
-  });
 
   document.addEventListener("antarakala:reset", ()=>{
     if(isScreenVisible("proses-auskultasi")) syncAuscultationScreen();
@@ -477,16 +500,18 @@
     const crackleCount = state.points.filter(pt=>pt && pt.result==="crackle").length;
     const wheezeCount  = state.points.filter(pt=>pt && pt.result==="wheeze").length;
 
-    // CNN/output akustik masih simulasi. Untuk Model B, crackle menjadi fitur boolean:
-    // true bila minimal satu dari enam titik terdeteksi crackle.
+    // Hasil akustik berasal dari sampel respiratory-cycle ICBHI yang benar-benar diputar
+    // saat perekaman. Kelas titik mengikuti prediksi rekonstruksi CNN yang cocok dengan
+    // anotasi sampel terpilih. Untuk Model B, crackle menjadi fitur boolean.
     const cracklePresent = crackleCount >= 1;
 
-    // Estimasi laju napas pada purwarupa masih berasal dari simulasi pipeline setelah auskultasi.
-    // Nilainya ditampilkan sebagai hasil, bukan lagi input manual.
+    // RR diambil dari anotasi respiratory-cycle rekaman sumber. Karena enam titik bisa
+    // memakai rekaman berbeda, median RR dipakai agar lebih stabil terhadap outlier.
     const ageM = Number.isFinite(p.age) ? p.age : 18;
     const rrThreshold = ageM < 2 ? 60 : (ageM < 12 ? 50 : 40);
-    const rrBias = crackleCount>=2 ? 14 : (crackleCount===1 ? 6 : -4);
-    const rrValue = Math.round(rrThreshold + rrBias + rand(-6,10));
+    const rrCandidates = state.points.map(pt=>pt ? Number(pt.rr) : NaN).filter(Number.isFinite);
+    const rrMeasured = median(rrCandidates);
+    const rrValue = Number.isFinite(rrMeasured) ? Math.round(rrMeasured) : rrThreshold;
 
     // Product-level override. Model training hanya memiliki override SpO2<90;
     // tanda bahaya umum dan chest indrawing dipertahankan sebagai rule keselamatan UI.
@@ -557,6 +582,7 @@
 
     state.result = {
       tier, confidence, total:null, override, overrideReasons, crackleCount, wheezeCount, rrValue, rrThreshold,
+      rrSourceCount: rrCandidates.length,
       factors: finalFactors,
       modelFeatures,
       modelProbabilities: mlPred.probabilities,
@@ -594,21 +620,39 @@
     if(rrEl) rrEl.textContent = `${r.rrValue} x/menit`;
   }
 
-  /* ---------------- PENJELASAN AI ---------------- */
+  /* ---------------- PENJELASAN AKUSTIK / GRAD-CAM ---------------- */
   function renderPenjelasan(){
     const r = state.result;
     if(!r) return;
-    const positiveFactors = r.factors.filter(f=>f.positive);
-    const top = (positiveFactors.length ? positiveFactors : r.factors).slice(0,3)
-      .map(f=>f.label.replace(/\s*\(.*?\)/,"").toLowerCase());
-    const implication = r.tier==="high" ? "PNEUMONIA BERAT YANG MEMBUTUHKAN RUJUKAN SEGERA KE RS/IGD."
-      : r.tier==="mid" ? "KEMUNGKINAN PNEUMONIA YANG MEMERLUKAN TERAPI ANTIBIOTIK ORAL DAN OBSERVASI KETAT."
-      : "KONDISI STABIL TANPA TANDA PNEUMONIA YANG SIGNIFIKAN.";
-    if(r.override){
-      $("#aiConclusionText").textContent = `Pasien dinilai ${RESULT_TEXT[r.tier].label} karena override klinis: ${r.overrideReasons.join(", ")}. TreeSHAP LightGBM untuk kelas tinggi terutama didorong oleh ${top.join(", ")}.`;
-    } else {
-      $("#aiConclusionText").textContent = `Pasien dinilai ${RESULT_TEXT[r.tier].label}. TreeSHAP menunjukkan faktor yang paling mendorong kelas hasil adalah ${top.join(", ")}. Kondisi ini menunjukkan ${implication}`;
+    const rank = { crackle:3, wheeze:2, normal:1 };
+    const representative = state.points.filter(Boolean).slice().sort((a,b)=>{
+      const rd = (rank[b.result]||0) - (rank[a.result]||0);
+      if(rd) return rd;
+      return (Number(b.confidence)||0) - (Number(a.confidence)||0);
+    })[0];
+
+    const img = $("#spectroImage");
+    if(img && representative && representative.gradcam){
+      img.src = representative.gradcam;
+      img.alt = `Grad-CAM mel-spektrogram ${representative.result} dari ${representative.name}`;
     }
+
+    if(!representative){
+      $("#aiConclusionText").textContent = "Belum ada sampel auskultasi yang dapat divisualisasikan.";
+      return;
+    }
+
+    const conf = Number.isFinite(Number(representative.confidence)) ? ` (${Math.round(Number(representative.confidence))}% keyakinan CNN)` : "";
+    const source = representative.sourceRecording ? ` Sampel berasal dari rekaman ICBHI ${representative.sourceRecording}.` : "";
+    let finding;
+    if(representative.result === "crackle") {
+      finding = `CNN mengenali crackle pada ${representative.name}${conf}. Area merah–oranye adalah Grad-CAM nyata dari layer konvolusi terakhir dan menandai rentang waktu yang paling berkontribusi terhadap kelas crackle.`;
+    } else if(representative.result === "wheeze") {
+      finding = `CNN mengenali wheeze pada ${representative.name}${conf}. Area merah–oranye adalah Grad-CAM nyata dari layer konvolusi terakhir dan menandai rentang waktu yang paling berkontribusi terhadap kelas wheeze.`;
+    } else {
+      finding = `CNN mengklasifikasikan ${representative.name} sebagai suara paru normal${conf}. Area merah–oranye menunjukkan rentang waktu yang paling berkontribusi terhadap keputusan kelas normal.`;
+    }
+    $("#aiConclusionText").textContent = finding + source;
   }
 
   function drawSpectrogram(tier, crackleCount){
@@ -657,7 +701,8 @@
 
   function renderFaktorRisiko(){
     const r = state.result; if(!r) return;
-    $("#whyTitle").textContent = "Mengapa " + RESULT_TEXT[r.tier].label.replace("RISIKO ","Risiko ") + "?";
+    const riskTitle = { high:"Risiko Tinggi", mid:"Risiko Sedang", low:"Risiko Rendah" };
+    $("#whyTitle").textContent = `Mengapa ${riskTitle[r.tier] || "Risiko"}?`;
     $("#factorBars").innerHTML = r.factors.map(f=>factorRowHTML(f,true)).join("");
     $("#confidenceVal").textContent = r.confidence.toFixed(1)+"%";
     if($("#shapMeta")) {
@@ -716,6 +761,9 @@
     state.points = new Array(6).fill(null);
     state.result = null;
     resetPatientForm();
+    if(window.AntarakalaDevice && typeof window.AntarakalaDevice.resetExam === "function"){
+      window.AntarakalaDevice.resetExam();
+    }
     setTimeout(()=> goTo("beranda"), 300);
   }
 
@@ -724,6 +772,7 @@
     if($("#pBirthdate")) $("#pBirthdate").value = "";
     if($("#pAgeYear")) $("#pAgeYear").value = "";
     if($("#pAgeMonth")) $("#pAgeMonth").value = "";
+    const ageNote = $("#ageScopeNote"); if(ageNote) ageNote.hidden = true;
     state.patient.age = null;
     $$(".seg button").forEach(b=>b.classList.remove("selected","danger"));
     syncDistressControls();
@@ -734,95 +783,217 @@
 
   /* ---------------- RIWAYAT ---------------- */
   let riwayatCurrentList = history;
+  function historyPageItemHTML(h, i){
+    const tierMap = { high:{cls:"high", pill:"pill-red", text:"Rujukan"}, mid:{cls:"", pill:"pill-amber", text:"Pemantauan"}, low:{cls:"", pill:"pill-green", text:"Selesai"} };
+    const t = tierMap[h.tier] || tierMap.low;
+    return `<div class="history-item home-history-item history-page-item ${t.cls}" data-histidx="${i}">
+      <div class="num">${h.tier==="high" ? "!" : "✓"}</div>
+      <div class="content">
+        <h4>${h.name}</h4>
+        <p class="home-risk-line">${RISK_LABEL[h.tier] || RISK_LABEL.low}</p>
+        <div class="history-footer">
+          <span class="pill ${t.pill}">${t.text}</span>
+          <span class="history-time">${h.when}</span>
+        </div>
+      </div>
+    </div>`;
+  }
+
   function renderRiwayat(list){
     const data = list || history;
     riwayatCurrentList = data;
-    const tierMap = { high:{pill:"pill-red", label:"Rujukan"}, mid:{pill:"pill-amber", label:"Pemantauan"}, low:{pill:"pill-green", label:"Selesai"} };
-    $("#riwayatList").innerHTML = data.map((h,i)=>{
-      const t = tierMap[h.tier];
-      return `<div class="history-item ${h.tier==='high'?'high':''}" data-histidx="${i}" style="border-left-color:${h.tier==='high'?'var(--red-600)':h.tier==='mid'?'var(--amber-600)':'var(--green-500)'}; cursor:pointer;">
-        <div class="num" style="background:${h.tier==='high'?'var(--red-600)':h.tier==='mid'?'var(--amber-600)':'var(--green-700)'}">${h.tier==="high"?"!":"✓"}</div>
-        <div class="content" style="width:100%;">
-          <div style="display:flex; justify-content:space-between; align-items:flex-start;">
-            <span class="pill ${t.pill}">${t.label}</span>
-            <span style="font-size:11px; color:var(--ink-300);">${h.when}</span>
-          </div>
-          <h4 style="margin-top:6px;">${h.name}</h4>
-          <p class="history-risk-label">${RISK_LABEL[h.tier] || RISK_LABEL.low}</p>
-        </div>
-      </div>`;
-    }).join("") || `<p style="font-size:12.5px;color:var(--ink-300);">Tidak ada data ditemukan.</p>`;
+    $("#riwayatList").innerHTML = data.map((h,i)=> historyPageItemHTML(h,i)).join("") || `<p style="font-size:12.5px;color:var(--ink-300);">Tidak ada data ditemukan.</p>`;
   }
   $("#searchRiwayat") && $("#searchRiwayat").addEventListener("input",(e)=>{
     const q = e.target.value.toLowerCase();
-    renderRiwayat(history.filter(h=> h.name.toLowerCase().includes(q) || h.id.toLowerCase().includes(q)));
+    renderRiwayat(history.filter(h=> h.name.toLowerCase().includes(q) || ((h.id||"").toLowerCase().includes(q))));
   });
+  $("#btnExportCsv") && $("#btnExportCsv").addEventListener("click", downloadHistoryCSV);
 
   const GENDER_LABEL = { L:"Laki-laki", P:"Perempuan" };
   const PCV_LABEL = { sudah:"Sudah", belum:"Belum", tidaktahu:"Tidak Tahu" };
   const RESULT_TAG_LABEL = { crackle:"Crackle", wheeze:"Wheeze", normal:"Normal" };
+  const DANGER_LABEL = { ada:"Ya", tidak:"Tidak" };
+  let currentHistoryDetail = null;
+
+  function formatAgeDetail(months){
+    if(!Number.isFinite(months) || months < 0) return "—";
+    const y = Math.floor(months/12);
+    const m = months % 12;
+    if(y && m) return `${y} tahun ${m} bulan`;
+    if(y) return `${y} tahun`;
+    return `${m} bulan`;
+  }
+
+  function buildHistoryDetailHTML(h){
+    const s = h.snapshot || {};
+    const result = s.result || {};
+    const tierInfo = { high:{pill:"Rujukan", cls:"high"}, mid:{pill:"Pemantauan", cls:"mid"}, low:{pill:"Selesai", cls:"low"} }[h.tier] || {pill:"Selesai", cls:"low"};
+    const dangerRows = DANGER_SIGNS.map(d=>`<div class="detail-list-row"><span>${d.title}</span><b>${DANGER_LABEL[(s.danger||{})[d.key]] || "Tidak"}</b></div>`).join("");
+    const distressRows = `
+      <div class="detail-list-row"><span>Nasal Flaring</span><b>${(s.vitals && s.vitals.flare==="ada") ? "Ya" : "Tidak"}</b></div>
+      <div class="detail-list-row"><span>Grunting</span><b>${(s.vitals && s.vitals.grunt==="ada") ? "Ya" : "Tidak"}</b></div>`;
+    const pointsHtml = (s.points && s.points.length) ? s.points.map((pt,i)=>{
+      const p = POINTS[i];
+      if(!pt) return `<div class="point-row"><div class="point-num">${p.id}</div><div class="point-name">${p.name}</div></div>`;
+      return `<div class="point-row done"><div class="point-num">${p.id}</div><div class="point-name">${p.name}</div><span class="point-status pill-tag tag-${pt.result}">${RESULT_TAG_LABEL[pt.result]}</span></div>`;
+    }).join("") : `<div class="detail-list-row"><span>Data auskultasi</span><b>Tidak tersedia</b></div>`;
+
+    return `<div class="detail-grid">
+      <div class="card">
+        <div class="detail-section-badge ${tierInfo.cls}">${tierInfo.pill}</div>
+        <div class="card-title" style="margin-bottom:10px;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-3.3 3.6-6 8-6s8 2.7 8 6"/></svg>
+          Identitas Pasien
+        </div>
+        <div class="detail-meta"><b>Nama:</b> ${h.name || "—"}</div>
+        <div class="detail-meta"><b>Waktu Pemeriksaan:</b> ${h.when || "—"}</div>
+        <div class="detail-meta"><b>Usia:</b> ${formatAgeDetail(s.patient && s.patient.age)}</div>
+        <div class="detail-meta"><b>Jenis Kelamin:</b> ${GENDER_LABEL[s.patient && s.patient.gender] || "—"}</div>
+        <div class="detail-meta"><b>Imunisasi PCV:</b> ${PCV_LABEL[s.patient && s.patient.pcv] || "—"}</div>
+      </div>
+
+      <div class="card">
+        <div class="card-title" style="margin-bottom:10px;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M9 12l2 2 4-4"/></svg>
+          Hasil Skrining
+        </div>
+        <div class="detail-meta"><b>Status:</b> ${RISK_LABEL[h.tier] || "—"}</div>
+        <div class="detail-meta"><b>Tingkat Kepercayaan:</b> ${Number.isFinite(result.confidence) ? result.confidence.toFixed(1)+"%" : "—"}</div>
+        <div class="detail-meta"><b>Laju Napas:</b> ${Number.isFinite(result.rrValue) ? result.rrValue+"/menit" : "—"}</div>
+        <div class="detail-meta"><b>SpO2:</b> ${typeof h.spo2 !== "undefined" ? h.spo2+"%" : "—"}</div>
+        <div class="detail-meta"><b>Suhu:</b> ${(s.vitals && Number.isFinite(s.vitals.temp)) ? s.vitals.temp.toFixed(1)+"°C" : "—"}</div>
+        ${result.override && result.overrideReasons && result.overrideReasons.length ? `<div class="detail-meta" style="color:var(--red-600);"><b>Override Klinis:</b> ${result.overrideReasons.join(", ")}</div>` : ``}
+      </div>
+
+      <div class="card">
+        <div class="card-title" style="margin-bottom:10px;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 9v4"/><path d="M12 17h.01"/><path d="M10.29 3.86L1.82 18A2 2 0 003.53 21h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg>
+          Tanda Bahaya
+        </div>
+        <div class="detail-list">${dangerRows}</div>
+      </div>
+
+      <div class="card">
+        <div class="card-title" style="margin-bottom:10px;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12c2-3 4-3 6 0s4 3 6 0 4-3 4-3"/><path d="M4 16c2-3 4-3 6 0s4 3 6 0 4-3 4-3"/></svg>
+          Tanda Distres Pernapasan
+        </div>
+        <div class="detail-list">${distressRows}</div>
+      </div>
+
+      <div class="card">
+        <div class="card-title" style="margin-bottom:10px;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 2a4 4 0 0 0-4 4v5a4 4 0 0 0 8 0V6a4 4 0 0 0-4-4z"/><path d="M6 11a6 6 0 0 0 12 0M12 17v4"/></svg>
+          Hasil Auskultasi 6 Titik
+        </div>
+        <div class="point-list point-list-compact">${pointsHtml}</div>
+      </div>
+    </div>`;
+  }
 
   function openHistoryDetail(idx){
     const h = riwayatCurrentList[idx];
     if(!h) return;
-    const s = h.snapshot;
-    const tierLabel = RESULT_TEXT[h.tier] ? RESULT_TEXT[h.tier].label : (RISK_LABEL[h.tier]||"—");
-
-    let body = `
-      <div class="card" style="margin-bottom:10px;">
-        <div class="card-title" style="margin-bottom:6px;">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-3.3 3.6-6 8-6s8 2.7 8 6"/></svg>
-          Identitas Pasien
-        </div>
-        <p style="font-size:13px; margin-bottom:3px;"><b>${h.name}</b> &nbsp;(${h.id})</p>
-        <p style="font-size:12.5px; color:var(--ink-500);">Diperiksa: ${h.when}</p>`;
-    if(s && s.patient){
-      body += `<p style="font-size:12.5px; color:var(--ink-500); margin-top:4px;">
-        Usia: ${Number.isFinite(s.patient.age) ? s.patient.age+" bulan" : "—"} ·
-        Jenis Kelamin: ${GENDER_LABEL[s.patient.gender]||"—"} ·
-        Imunisasi PCV: ${PCV_LABEL[s.patient.pcv]||"—"}</p>`;
-    }
-    body += `</div>`;
-
-    body += `<div class="card" style="margin-bottom:10px;">
-      <div class="card-title" style="margin-bottom:6px;">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M9 12l2 2 4-4"/></svg>
-        Hasil Skrining
-      </div>
-      <p style="font-size:13px; font-weight:700; color:var(--ink-800); margin-bottom:4px;">${tierLabel}</p>`;
-    if(s && s.result){
-      body += `<p style="font-size:12.5px; color:var(--ink-500);">Kepercayaan AI: ${s.result.confidence.toFixed(1)}% · Laju Napas: ${s.result.rrValue}/menit (ambang usia: ${s.result.rrThreshold}/menit)</p>`;
-      if(s.result.override){
-        body += `<p style="font-size:12px; color:var(--red-600); margin-top:4px;">Override klinis: ${s.result.overrideReasons.join(", ")}</p>`;
-      }
-    }
-    body += `<p style="font-size:12.5px; color:var(--ink-500); margin-top:4px;">SpO2: ${h.spo2}%${s&&s.vitals ? " · Suhu: "+s.vitals.temp.toFixed(1)+"°C" : ""}</p>
-    </div>`;
-
-    if(s && s.points && s.points.some(Boolean)){
-      body += `<div class="card">
-        <div class="card-title" style="margin-bottom:6px;">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 2a4 4 0 00-4 4v5a4 4 0 008 0V6a4 4 0 00-4-4z"/><path d="M6 11a6 6 0 0012 0M12 17v4"/></svg>
-          Hasil Auskultasi 6 Titik
-        </div>
-        <div class="point-list point-list-compact">`;
-      s.points.forEach((pt,i)=>{
-        const p = POINTS[i];
-        if(!pt){ body += `<div class="point-row"><div class="point-num">${p.id}</div><div class="point-name">${p.name}</div></div>`; return; }
-        body += `<div class="point-row done"><div class="point-num">${p.id}</div><div class="point-name">${p.name}</div><span class="point-status pill-tag tag-${pt.result}">${RESULT_TAG_LABEL[pt.result]}</span></div>`;
-      });
-      body += `</div></div>`;
-    } else if(!s){
-      body += `<p style="font-size:12px; color:var(--ink-300); font-style:italic;">Data contoh demo — rincian lengkap hanya tersedia untuk pemeriksaan yang disimpan dari sesi ini.</p>`;
-    }
-
-    $("#historyDetailBody").innerHTML = body;
-    $("#historyDetailModal").classList.add("visible");
+    currentHistoryDetail = h;
+    $("#historyDetailPageBody").innerHTML = buildHistoryDetailHTML(h);
+    goTo("detail-riwayat");
   }
   document.addEventListener("click",(e)=>{
-    const item = e.target.closest(".history-item[data-histidx]");
+    const item = e.target.closest("#riwayatList .history-item[data-histidx]");
     if(item) openHistoryDetail(parseInt(item.dataset.histidx,10));
   });
+
+  function htmlEscape(value){
+    return String(value == null ? "" : value)
+      .replace(/&/g,"&amp;")
+      .replace(/</g,"&lt;")
+      .replace(/>/g,"&gt;")
+      .replace(/"/g,"&quot;")
+      .replace(/'/g,"&#039;");
+  }
+
+  function downloadCurrentPatientReport(){
+    const h = currentHistoryDetail;
+    if(!h){ showToast("Pilih data pasien terlebih dahulu"); return; }
+    const s = h.snapshot || {};
+    const p = s.patient || {};
+    const v = s.vitals || {};
+    const r = s.result || {};
+    const dangerRows = DANGER_SIGNS.map(d=>`<tr><td>${htmlEscape(d.title)}</td><td>${(s.danger && s.danger[d.key]==="ada") ? "Ya" : "Tidak"}</td></tr>`).join("");
+    const pointRows = POINTS.map((pt,i)=>{
+      const result = s.points && s.points[i];
+      return `<tr><td>${pt.id}. ${htmlEscape(pt.name)}</td><td>${result ? htmlEscape(RESULT_TAG_LABEL[result.result] || result.result) : "—"}</td></tr>`;
+    }).join("");
+    const html = `<!doctype html><html lang="id"><head><meta charset="utf-8"><title>Laporan ANTARAKALA - ${htmlEscape(h.name||"Pasien")}</title><style>
+      body{font-family:Arial,sans-serif;max-width:760px;margin:32px auto;padding:0 22px;color:#151A18;line-height:1.45}h1{color:#008C9E;margin-bottom:4px}h2{font-size:17px;color:#00626E;margin:24px 0 8px}p.meta{color:#6B746F;margin-top:0}table{width:100%;border-collapse:collapse;margin:8px 0 18px}td,th{border-bottom:1px solid #e5e9e6;padding:8px 6px;text-align:left;font-size:13px}td:first-child{width:52%;color:#3A423F}.risk{font-weight:700;font-size:18px;margin:8px 0 14px}.note{font-size:11px;color:#9AA39D;margin-top:28px}@media print{body{margin:0;max-width:none}.note{page-break-inside:avoid}}
+    </style></head><body>
+      <h1>Laporan Pemeriksaan ANTARAKALA</h1><p class="meta">Diperiksa: ${htmlEscape(h.when||"—")}</p>
+      <div class="risk">${htmlEscape(RISK_LABEL[h.tier]||"—")}</div>
+      <h2>Identitas Pasien</h2><table>
+        <tr><td>Nama</td><td>${htmlEscape(h.name||"—")}</td></tr>
+        <tr><td>Usia</td><td>${htmlEscape(formatAgeDetail(p.age))}</td></tr>
+        <tr><td>Jenis Kelamin</td><td>${htmlEscape(GENDER_LABEL[p.gender]||"—")}</td></tr>
+        <tr><td>Imunisasi PCV</td><td>${htmlEscape(PCV_LABEL[p.pcv]||"—")}</td></tr>
+      </table>
+      <h2>Hasil Skrining</h2><table>
+        <tr><td>SpO₂</td><td>${typeof h.spo2!=="undefined" ? htmlEscape(h.spo2)+"%" : "—"}</td></tr>
+        <tr><td>Suhu</td><td>${Number.isFinite(v.temp) ? htmlEscape(v.temp.toFixed(1))+" °C" : "—"}</td></tr>
+        <tr><td>Laju Napas</td><td>${Number.isFinite(r.rrValue) ? htmlEscape(r.rrValue)+"/menit" : "—"}</td></tr>
+        <tr><td>Nasal Flaring</td><td>${v.flare==="ada" ? "Ya" : "Tidak"}</td></tr>
+        <tr><td>Grunting</td><td>${v.grunt==="ada" ? "Ya" : "Tidak"}</td></tr>
+      </table>
+      <h2>Tanda Bahaya</h2><table>${dangerRows}</table>
+      <h2>Hasil Auskultasi 6 Titik</h2><table>${pointRows}</table>
+      <p class="note">Laporan ini berasal dari purwarupa ANTARAKALA dan merupakan alat bantu skrining, bukan diagnosis medis. File dapat dibuka di browser lalu dicetak atau disimpan sebagai PDF.</p>
+    </body></html>`;
+    const blob = new Blob([html], {type:"text/html;charset=utf-8"});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `Laporan_ANTARAKALA_${String(h.name||"pasien").replace(/[^a-z0-9_-]+/gi,"_")}.html`;
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }
+
+  function csvEscape(val){
+    const s = String(val == null ? "" : val);
+    return '"' + s.replace(/"/g, '""') + '"';
+  }
+
+  function downloadHistoryCSV(){
+    if(!history.length){ showToast("Belum ada data riwayat untuk diexport"); return; }
+    const rows = [[
+      "nama","waktu","risiko","usia_bulan","jenis_kelamin","imunisasi_pcv","spo2","suhu","laju_napas","nasal_flaring","grunting","tanda_bahaya"
+    ]];
+    history.forEach(h=>{
+      const s = h.snapshot || {};
+      const dangerSelected = DANGER_SIGNS.filter(d => s.danger && s.danger[d.key] === "ada").map(d => d.title).join("; ");
+      rows.push([
+        h.name || "",
+        h.when || "",
+        RISK_LABEL[h.tier] || "",
+        s.patient && Number.isFinite(s.patient.age) ? s.patient.age : "",
+        GENDER_LABEL[s.patient && s.patient.gender] || "",
+        PCV_LABEL[s.patient && s.patient.pcv] || "",
+        typeof h.spo2 !== "undefined" ? h.spo2 : "",
+        s.vitals && Number.isFinite(s.vitals.temp) ? s.vitals.temp.toFixed(1) : "",
+        s.result && Number.isFinite(s.result.rrValue) ? s.result.rrValue : "",
+        s.vitals && s.vitals.flare === "ada" ? "Ya" : "Tidak",
+        s.vitals && s.vitals.grunt === "ada" ? "Ya" : "Tidak",
+        dangerSelected
+      ]);
+    });
+    const csv = rows.map(row => row.map(csvEscape).join(",")).join("\n");
+    const blob = new Blob([csv], {type:"text/csv;charset=utf-8;"});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `Riwayat_ANTARAKALA_${new Date().toISOString().slice(0,10)}.csv`;
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    showToast("Riwayat berhasil diexport ke CSV");
+  }
 
   /* ---------------- REPORT DOWNLOAD ---------------- */
   function downloadReport(){
@@ -859,7 +1030,7 @@
       ${r.factors.map(f=>`<div class="factor"><span>${f.label}</span><span>${f.shapValue>=0?"+":"−"}${Math.abs(f.shapValue).toFixed(3)}</span></div>`).join("")}
       <footer>
         Dokumen ini dihasilkan oleh prototipe antarmuka ANTARAKALA untuk keperluan demonstrasi KMIPN VIII 2026.
-        Klasifikasi suara paru CNN dan estimasi laju napas pada purwarupa ini masih disimulasikan; inferensi LightGBM dan nilai TreeSHAP dihitung dari model yang terintegrasi. Hasil ini bukan diagnosis medis.
+        Sampel suara paru berasal dari ICBHI; kelas akustik dan Grad-CAM dihasilkan dari rekonstruksi checkpoint CNN, sedangkan laju napas dihitung dari anotasi respiratory-cycle rekaman sumber. Inferensi LightGBM dan TreeSHAP dihitung dari model terintegrasi. Hasil ini bukan diagnosis medis.
         Dibuat: ${new Date().toLocaleString("id-ID")}
       </footer>
     </body></html>`;
