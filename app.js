@@ -241,7 +241,7 @@
     if(!note) return;
     const invalid = !Number.isFinite(totalMonths) || totalMonths < 0 || totalMonths > 59;
     note.hidden = !invalid;
-    note.textContent = "ANTARAKALA ditujukan untuk anak usia 0–59 bulan (maksimal 4 tahun 11 bulan).";
+    note.textContent = "Antarakala ditujukan untuk anak usia 0–59 bulan (maksimal 4 tahun 11 bulan).";
   }
 
   function validatePatientForm(){
@@ -925,7 +925,7 @@
       const result = s.points && s.points[i];
       return `<tr><td>${pt.id}. ${htmlEscape(pt.name)}</td><td>${result ? htmlEscape(RESULT_TAG_LABEL[result.result] || result.result) : "—"}</td></tr>`;
     }).join("");
-    const html = `<!doctype html><html lang="id"><head><meta charset="utf-8"><title>Laporan ANTARAKALA - ${htmlEscape(h.name||"Pasien")}</title><style>
+    const html = `<!doctype html><html lang="id"><head><meta charset="utf-8"><title>Laporan Antarakala - ${htmlEscape(h.name||"Pasien")}</title><style>
       body{font-family:Arial,sans-serif;max-width:760px;margin:32px auto;padding:0 22px;color:#151A18;line-height:1.45}h1{color:#008C9E;margin-bottom:4px}h2{font-size:17px;color:#00626E;margin:24px 0 8px}p.meta{color:#6B746F;margin-top:0}table{width:100%;border-collapse:collapse;margin:8px 0 18px}td,th{border-bottom:1px solid #e5e9e6;padding:8px 6px;text-align:left;font-size:13px}td:first-child{width:52%;color:#3A423F}.risk{font-weight:700;font-size:18px;margin:8px 0 14px}.note{font-size:11px;color:#9AA39D;margin-top:28px}@media print{body{margin:0;max-width:none}.note{page-break-inside:avoid}}
     </style></head><body>
       <h1>Laporan Pemeriksaan ANTARAKALA</h1><p class="meta">Diperiksa: ${htmlEscape(h.when||"—")}</p>
@@ -945,7 +945,7 @@
       </table>
       <h2>Tanda Bahaya</h2><table>${dangerRows}</table>
       <h2>Hasil Auskultasi 6 Titik</h2><table>${pointRows}</table>
-      <p class="note">Laporan ini berasal dari purwarupa ANTARAKALA dan merupakan alat bantu skrining, bukan diagnosis medis. File dapat dibuka di browser lalu dicetak atau disimpan sebagai PDF.</p>
+      <p class="note">Laporan ini berasal dari purwarupa Antarakala dan merupakan alat bantu skrining, bukan diagnosis medis. File dapat dibuka di browser lalu dicetak atau disimpan sebagai PDF.</p>
     </body></html>`;
     const blob = new Blob([html], {type:"text/html;charset=utf-8"});
     const url = URL.createObjectURL(blob);
@@ -1001,7 +1001,7 @@
     if(!r){ showToast("Belum ada hasil untuk diunduh"); return; }
     const p = state.patient, v = state.vitals;
     const html = `<!DOCTYPE html><html lang="id"><head><meta charset="utf-8">
-    <title>Laporan Skrining ANTARAKALA, ${p.name||"Pasien"}</title>
+    <title>Laporan Skrining Antarakala, ${p.name||"Pasien"}</title>
     <style>
       body{font-family:Arial,sans-serif; max-width:640px; margin:40px auto; color:#151A18;}
       h1{color:#00A3AE; font-size:22px; margin-bottom:2px;}
@@ -1014,7 +1014,7 @@
       .factor{display:flex; justify-content:space-between; font-size:13px; padding:5px 0; border-bottom:1px dashed #eee;}
       footer{margin-top:26px; font-size:11px; color:#9AA39D; line-height:1.6;}
     </style></head><body>
-      <h1>Laporan Hasil Skrining, ANTARAKALA</h1>
+      <h1>Laporan Hasil Skrining, Antarakala</h1>
       <div class="tag">${RESULT_TEXT[r.tier].label}</div>
       <table>
         <tr><td>Nama Pasien</td><td>${p.name||"—"}</td></tr>
@@ -1029,7 +1029,7 @@
       <h3>Faktor Kontribusi Utama (TreeSHAP, kelas ${String(r.shapClassName||"").toUpperCase()})</h3>
       ${r.factors.map(f=>`<div class="factor"><span>${f.label}</span><span>${f.shapValue>=0?"+":"−"}${Math.abs(f.shapValue).toFixed(3)}</span></div>`).join("")}
       <footer>
-        Dokumen ini dihasilkan oleh prototipe antarmuka ANTARAKALA untuk keperluan demonstrasi KMIPN VIII 2026.
+        Dokumen ini dihasilkan oleh prototipe antarmuka Antarakala untuk keperluan demonstrasi KMIPN VIII 2026.
         Sampel suara paru berasal dari ICBHI; kelas akustik dan Grad-CAM dihasilkan dari rekonstruksi checkpoint CNN, sedangkan laju napas dihitung dari anotasi respiratory-cycle rekaman sumber. Inferensi LightGBM dan TreeSHAP dihitung dari model terintegrasi. Hasil ini bukan diagnosis medis.
         Dibuat: ${new Date().toLocaleString("id-ID")}
       </footer>

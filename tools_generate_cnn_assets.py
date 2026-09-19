@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-ANTARAKALA — rekonstruksi CNN 1D dari checkpoint state_dict yang tersedia.
+Antarakala — rekonstruksi CNN 1D dari checkpoint state_dict yang tersedia.
 
 Catatan penting:
 - File training asli tidak tersedia. Arsitektur non-parametrik (stride/aktivasi/pooling)
