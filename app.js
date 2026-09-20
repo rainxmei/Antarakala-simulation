@@ -397,7 +397,7 @@
       $("#activePointLabel").textContent = "Menunggu perangkat mulai merekam…";
       renderPointList(-1, "waiting");
     }
-    setTimerDisplay(0, "00:00 / 00:15");
+    setTimerDisplay(0, "00:00 / 00:09");
   }
 
   let phoneAusTimer = null;
@@ -431,7 +431,7 @@
     state.points[index] = { id:index+1, name, result, confidence, rr, gradcam, audio, sampleId, sourceRecording, annotationCycle, probabilities };
     if(isScreenVisible("proses-auskultasi")){
       renderPointList(index, "waiting");
-      setTimerDisplay(0, "00:00 / 00:15");
+      setTimerDisplay(0, "00:00 / 00:09");
       const doneCount = state.points.filter(Boolean).length;
       $("#activePointLabel").textContent = doneCount>=6
         ? "✓ 6 Titik Selesai Direkam"

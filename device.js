@@ -12,7 +12,7 @@
     "Posterior Atas Kiri","Posterior Atas Kanan","Posterior Bawah Kiri",
     "Posterior Bawah Kanan","Anterior Atas Kiri","Anterior Atas Kanan"
   ];
-  const REC_SECONDS = 15;         // durasi rekam per titik
+  const REC_SECONDS = 9;         // durasi rekam per titik
   const BAD_SIGNAL_CHANCE = 0.16; // peluang kualitas sinyal rendah per rekaman
   const RESULT_COLORS = { crackle:"#D9364A", wheeze:"#C98A00", normal:"#00A3AE" };
   const RESULT_LABELS = { crackle:"CRACKLE", wheeze:"WHEEZE", normal:"NORMAL" };
